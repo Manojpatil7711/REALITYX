@@ -60,3 +60,28 @@ def test_signature_and_decoded_format_must_agree(monkeypatch):
     monkeypatch.setattr(security.Image, "open", lambda *args, **kwargs: FakeImage())
     with pytest.raises(ValueError, match="disagree"):
         security.inspect_image(_png())
+
+from app.rate_limit import FixedWindowRateLimiter
+
+
+def test_rate_limiter_blocks_after_limit_and_recovers():
+    limiter = FixedWindowRateLimiter(limit=2, window_seconds=60)
+    assert limiter.check("client", now=100).allowed
+    assert limiter.check("client", now=101).allowed
+    blocked = limiter.check("client", now=102)
+    assert not blocked.allowed
+    assert blocked.retry_after_seconds == 58
+    assert limiter.check("client", now=160).allowed
+
+
+def test_rate_limiter_rejects_invalid_configuration():
+    with pytest.raises(ValueError):
+        FixedWindowRateLimiter(limit=0, window_seconds=60)
+    with pytest.raises(ValueError):
+        FixedWindowRateLimiter(limit=1, window_seconds=0)
+
+
+def test_rate_limiter_requires_identity():
+    limiter = FixedWindowRateLimiter(limit=1, window_seconds=60)
+    with pytest.raises(ValueError):
+        limiter.check("")
