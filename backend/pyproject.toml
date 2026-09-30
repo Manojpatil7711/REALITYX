@@ -1,0 +1,21 @@
+[project]
+name = "realityx-backend"
+version = "0.1.0"
+description = "Secure evidence-based digital media verification API"
+requires-python = "==3.12.*"
+dependencies = [
+  "fastapi==0.117.1",
+  "uvicorn[standard]==0.36.0",
+  "pydantic==2.11.9",
+  "python-multipart==0.0.20",
+  "Pillow==11.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "httpx==0.28.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
