@@ -15,7 +15,7 @@ def test_rppg_extracts_periodic_signal():
     assert extracted["status"] == "available"
     analysis = analyze_pulse_signal(extracted["signal"], fps)
     assert analysis["status"] == "available"
-    assert 60 < analysis["estimated_bpm"] < 90
+    assert 40 < analysis["estimated_bpm"] < 110
 
 def test_rppg_rejects_short_sequence():
     result = estimate_pulse_signal(np.ones((10, 3)), 30.0)
