@@ -80,3 +80,29 @@ def test_idempotency_key_cannot_be_reused_for_different_payload():
     )
     assert first.status_code == 200
     assert second.status_code == 409
+
+
+def test_empty_upload_is_rejected():
+    response = client.post(
+        "/v1/verify/image",
+        headers={"Idempotency-Key": str(uuid.uuid4())},
+        files={"file": ("empty.png", b"", "image/png")},
+    )
+    assert response.status_code == 400
+
+
+def test_rate_limit_returns_retry_after(monkeypatch):
+    from app import routes
+
+    class Blocked:
+        allowed = False
+        retry_after_seconds = 17
+
+    monkeypatch.setattr(routes.image_verify_limiter, "check", lambda identity: Blocked())
+    response = client.post(
+        "/v1/verify/image",
+        headers={"Idempotency-Key": str(uuid.uuid4())},
+        files={"file": ("x.png", _png(), "image/png")},
+    )
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "17"
