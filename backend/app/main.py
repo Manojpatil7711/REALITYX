@@ -1,5 +1,8 @@
 from fastapi import FastAPI
+from .logging import configure_logging
 from .routes import router
+
+configure_logging()
 
 app = FastAPI(
     title="REALITYX Verification API",
