@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import numpy as np
+
 
 def _safe_normalize(x: np.ndarray) -> np.ndarray:
     x = np.asarray(x, dtype=np.float64)
@@ -7,6 +9,7 @@ def _safe_normalize(x: np.ndarray) -> np.ndarray:
     if not np.isfinite(scale) or scale < 1e-12:
         return np.zeros_like(x)
     return (x - np.mean(x)) / scale
+
 
 def estimate_pulse_signal(rgb_frames: np.ndarray, fps: float) -> dict:
     """Estimate a pulse-related signal from tracked skin-region RGB means.
@@ -31,7 +34,12 @@ def estimate_pulse_signal(rgb_frames: np.ndarray, fps: float) -> dict:
     x = 3.0 * r - 2.0 * g
     y = 1.5 * r + g - 1.5 * b
     alpha = np.std(x) / (np.std(y) + 1e-12)
-    signal = _safe_normalize(x - alpha * y)\n    # Degenerate color relationships can cancel the projection; retain a\n    # conservative temporal fallback rather than inventing a physiological signal.\n    if np.std(signal) < 1e-6:\n        signal = _safe_normalize(g)
+    signal = _safe_normalize(x - alpha * y)
+
+    # Degenerate color relationships can cancel the projection; retain a
+    # conservative temporal fallback rather than inventing a physiological signal.
+    if np.std(signal) < 1e-6:
+        signal = _safe_normalize(g)
 
     return {
         "status": "available",
