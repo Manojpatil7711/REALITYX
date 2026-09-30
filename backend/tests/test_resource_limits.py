@@ -1,6 +1,6 @@
 import pytest
 
-from app.security.resource_limits import (
+from app.security_resource_limits import (
     ResourceLimits,
     validate_processing_budget,
     validate_upload_size,
