@@ -17,7 +17,7 @@ def _magic_type(data: bytes) -> str | None:
         return "jpeg"
     if data.startswith(MAGIC["png"]):
         return "png"
-    if data.startswith(MAGIC["webp"]) and data[8:12] == b"WEBP":
+    if data.startswith(MAGIC["webp"]) and len(data) >= 12 and data[8:12] == b"WEBP":
         return "webp"
     return None
 
@@ -25,13 +25,14 @@ def inspect_image(data: bytes) -> dict:
     kind = _magic_type(data)
     if kind is None:
         raise ValueError("Unsupported or invalid image signature")
-
     try:
         with Image.open(io.BytesIO(data)) as image:
+            if image.format.lower() != kind:
+                raise ValueError("Image signature and decoded format disagree")
             image.verify()
         with Image.open(io.BytesIO(data)) as image:
             width, height = image.size
-            if width > MAX_WIDTH or height > MAX_HEIGHT or width * height > MAX_PIXELS:
+            if width <= 0 or height <= 0 or width > MAX_WIDTH or height > MAX_HEIGHT or width * height > MAX_PIXELS:
                 raise ValueError("Decoded image dimensions exceed safety limits")
             return {
                 "integrity": {"status": "available", "format": kind},
