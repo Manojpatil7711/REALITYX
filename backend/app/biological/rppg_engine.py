@@ -31,7 +31,7 @@ def estimate_pulse_signal(rgb_frames: np.ndarray, fps: float) -> dict:
     x = 3.0 * r - 2.0 * g
     y = 1.5 * r + g - 1.5 * b
     alpha = np.std(x) / (np.std(y) + 1e-12)
-    signal = _safe_normalize(x - alpha * y)
+    signal = _safe_normalize(x - alpha * y)\n    # Degenerate color relationships can cancel the projection; retain a\n    # conservative temporal fallback rather than inventing a physiological signal.\n    if np.std(signal) < 1e-6:\n        signal = _safe_normalize(g)
 
     return {
         "status": "available",
