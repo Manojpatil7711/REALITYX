@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import io
+
 from PIL import Image, UnidentifiedImageError
+from PIL.Image import DecompressionBombError, DecompressionBombWarning
 
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 MAX_WIDTH = 12000
@@ -12,6 +16,13 @@ MAGIC = {
     "webp": b"RIFF",
 }
 
+MIME_BY_FORMAT = {
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "webp": "image/webp",
+}
+
+
 def _magic_type(data: bytes) -> str | None:
     if data.startswith(MAGIC["jpeg"]):
         return "jpeg"
@@ -21,23 +32,57 @@ def _magic_type(data: bytes) -> str | None:
         return "webp"
     return None
 
+
 def inspect_image(data: bytes) -> dict:
     kind = _magic_type(data)
     if kind is None:
         raise ValueError("Unsupported or invalid image signature")
+
+    # Treat decoder bomb warnings as hard failures. The byte-size limit alone
+    # is insufficient because a small compressed image can expand dramatically.
     try:
         with Image.open(io.BytesIO(data)) as image:
             if image.format.lower() != kind:
                 raise ValueError("Image signature and decoded format disagree")
-            image.verify()
-        with Image.open(io.BytesIO(data)) as image:
+
             width, height = image.size
-            if width <= 0 or height <= 0 or width > MAX_WIDTH or height > MAX_HEIGHT or width * height > MAX_PIXELS:
+            if (
+                width <= 0
+                or height <= 0
+                or width > MAX_WIDTH
+                or height > MAX_HEIGHT
+                or width * height > MAX_PIXELS
+            ):
                 raise ValueError("Decoded image dimensions exceed safety limits")
+
+            image.verify()
+
+        with Image.open(io.BytesIO(data)) as image:
+            # Force decoder validation after verify() while retaining the same
+            # dimension limits on the independently opened working image.
+            image.load()
+            width, height = image.size
+            if (
+                width <= 0
+                or height <= 0
+                or width > MAX_WIDTH
+                or height > MAX_HEIGHT
+                or width * height > MAX_PIXELS
+            ):
+                raise ValueError("Decoded image dimensions exceed safety limits")
+
             return {
                 "integrity": {"status": "available", "format": kind},
-                "decoded_dimensions": {"status": "available", "width": width, "height": height},
+                "decoded_dimensions": {
+                    "status": "available",
+                    "width": width,
+                    "height": height,
+                },
                 "metadata": {"status": "available"},
             }
+    except DecompressionBombError as exc:
+        raise ValueError("Image expands beyond safe decoder limits") from exc
+    except DecompressionBombWarning as exc:
+        raise ValueError("Image expands beyond safe decoder limits") from exc
     except (UnidentifiedImageError, OSError) as exc:
         raise ValueError("Corrupt or malformed image") from exc
