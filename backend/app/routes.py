@@ -29,6 +29,11 @@ async def verify_image(
     if kind not in ALLOWED_FORMATS:
         raise HTTPException(status_code=415, detail="Unsupported or invalid image format")
 
+    declared_mime = (file.content_type or "").lower()
+    expected_mime = {"jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}[kind]
+    if declared_mime and declared_mime != expected_mime:
+        raise HTTPException(status_code=415, detail="Declared content type does not match image format")
+
     fingerprint = hashlib.sha256(data).hexdigest()
     try:
         cached = store.get(idempotency_key, fingerprint)
