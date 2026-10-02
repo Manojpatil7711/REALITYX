@@ -12,6 +12,14 @@ class SignalStatus(StrEnum):
     FAILED = "failed"
 
 
+class SignalVerdict(StrEnum):
+    AUTHENTIC = "authentic"
+    VERIFIED = "verified"
+    MANIPULATED = "manipulated"
+    AI_GENERATED = "ai_generated"
+    INAUTHENTIC = "inauthentic"
+
+
 class VerificationResult(StrEnum):
     VERIFIED = "verified"
     INAUTHENTIC = "inauthentic"
@@ -24,6 +32,7 @@ class Evidence(BaseModel):
     status: SignalStatus
     summary: str
     details: dict = Field(default_factory=dict)
+    verdict: SignalVerdict | None = None
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     latency_ms: float | None = Field(default=None, ge=0.0)
 
