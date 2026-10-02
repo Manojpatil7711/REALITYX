@@ -13,6 +13,15 @@ class FusionDecision:
     evidence: list[Evidence]
 
 
+_VERIFIED_VERDICTS = {VerificationResult.VERIFIED.value, "authentic"}
+_INAUTHENTIC_VERDICTS = {
+    "manipulated",
+    "ai_generated",
+    "inauthentic",
+}
+_VERDICT_VALUES = _VERIFIED_VERDICTS | _INAUTHENTIC_VERDICTS
+
+
 def _usable(signals: list[Evidence]) -> list[Evidence]:
     return [
         signal
@@ -22,31 +31,41 @@ def _usable(signals: list[Evidence]) -> list[Evidence]:
     ]
 
 
+def _verdict_signals(signals: list[Evidence]) -> list[Evidence]:
+    """Return only available signals that explicitly make a verdict claim."""
+    return [
+        signal
+        for signal in _usable(signals)
+        if signal.details.get("verdict") in _VERDICT_VALUES
+    ]
+
+
 def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
-    """Fuse only explicit verdict-bearing signals; facts alone never create a verdict."""
+    """Fuse explicit verdict-bearing signals; factual evidence never inflates confidence."""
     usable = _usable(signals)
-    if not usable:
+    verdict_signals = _verdict_signals(usable)
+    if not verdict_signals:
         return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
 
     positive = [
         s.confidence
-        for s in usable
-        if s.details.get("verdict") in {VerificationResult.VERIFIED.value, "authentic"}
+        for s in verdict_signals
+        if s.details.get("verdict") in _VERIFIED_VERDICTS
     ]
     negative = [
         s.confidence
-        for s in usable
-        if s.details.get("verdict") in {"manipulated", "ai_generated", "inauthentic"}
+        for s in verdict_signals
+        if s.details.get("verdict") in _INAUTHENTIC_VERDICTS
     ]
-
-    if not positive and not negative:
-        return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
 
     p = sum(positive) / len(positive) if positive else 0.0
     n = sum(negative) / len(negative) if negative else 0.0
     support = max(p, n)
     agreement = 1.0 if not positive or not negative else max(0.0, 1.0 - abs(p - n))
-    coverage = min(1.0, sqrt(len(usable) / 3.0))
+
+    # Coverage measures the number of independent verdict-bearing signals,
+    # not the number of raw/factual signals in the pipeline.
+    coverage = min(1.0, sqrt(len(verdict_signals) / 3.0))
     confidence = round(max(0.0, min(1.0, support * agreement * coverage)), 4)
 
     if positive and negative:
