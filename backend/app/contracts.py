@@ -12,6 +12,11 @@ class SignalStatus(StrEnum):
     FAILED = "failed"
 
 
+class EvidenceKind(StrEnum):
+    FACT = "fact"
+    VERDICT = "verdict"
+
+
 class SignalVerdict(StrEnum):
     AUTHENTIC = "authentic"
     VERIFIED = "verified"
@@ -30,6 +35,7 @@ class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
     signal: str
     status: SignalStatus
+    kind: EvidenceKind = EvidenceKind.FACT
     summary: str
     details: dict = Field(default_factory=dict)
     verdict: SignalVerdict | None = None
