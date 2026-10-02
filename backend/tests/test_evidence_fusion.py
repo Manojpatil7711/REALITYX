@@ -1,14 +1,13 @@
-from app.contracts import Evidence, SignalStatus, VerificationResult
+from app.contracts import Evidence, SignalStatus, SignalVerdict, VerificationResult
 from app.evidence_fusion import fuse_evidence
 
 
 def signal(verdict=None, confidence=0.9, status=SignalStatus.AVAILABLE, name="test"):
-    details = {} if verdict is None else {"verdict": verdict}
     return Evidence(
         signal=name,
         status=status,
         summary="test",
-        details=details,
+        verdict=SignalVerdict(verdict) if verdict is not None else None,
         confidence=confidence,
     )
 
