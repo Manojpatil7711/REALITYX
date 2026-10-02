@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 from typing import Any
 
 from PIL import Image
@@ -14,9 +15,9 @@ class IntegrityEngine(SignalEngine):
     def analyze(self, data: bytes, context: EngineContext) -> dict[str, Any]:
         # This engine reports deterministic file/container facts only. It never
         # turns successful decoding into an authenticity claim.
-        image = Image.open(__import__("io").BytesIO(data))
-        image_format = (image.format or "unknown").lower()
-        width, height = image.size
+        with Image.open(io.BytesIO(data)) as image:
+            image_format = (image.format or "unknown").lower()
+            width, height = image.size
 
         return {
             "status": "available",
