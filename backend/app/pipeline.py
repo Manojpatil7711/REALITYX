@@ -2,7 +2,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .contracts import Evidence, SignalStatus
+from .contracts import Evidence, SignalStatus, SignalVerdict
 from .engines import ENGINE_REGISTRY, EngineContext
 
 logger = logging.getLogger("realityx.pipeline")
@@ -14,12 +14,15 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
     try:
         result = engine.analyze(data, context)
         status = SignalStatus(result.get("status", "available"))
+        raw_verdict = result.get("verdict")
+        verdict = SignalVerdict(raw_verdict) if raw_verdict is not None else None
         elapsed = (time.perf_counter() - started) * 1000
         evidence = Evidence(
             signal=engine.name,
             status=status,
             summary=result.get("summary", "तपासणी पूर्ण झाली."),
-            details={k: v for k, v in result.items() if k not in {"status", "summary", "confidence"}},
+            details={k: v for k, v in result.items() if k not in {"status", "summary", "confidence", "verdict"}},
+            verdict=verdict,
             confidence=result.get("confidence"),
             latency_ms=elapsed,
         )
@@ -59,7 +62,6 @@ def run_signal_pipeline(data: bytes, verification_id: str, media_sha256: str) ->
     if not engine_types:
         return []
 
-    # Resolve workers from the active registry on every invocation.
     max_workers = max(1, min(8, len(engine_types)))
     with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="rx-signal") as executor:
         futures = [executor.submit(_run_engine, engine_type, data, context) for engine_type in engine_types]
