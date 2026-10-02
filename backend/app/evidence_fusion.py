@@ -23,7 +23,7 @@ def _usable(signals: list[Evidence]) -> list[Evidence]:
 
 
 def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
-    """Conservative multi-signal fusion with explicit abstention."""
+    """Fuse only explicit verdict-bearing signals; facts alone never create a verdict."""
     usable = _usable(signals)
     if not usable:
         return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
@@ -31,14 +31,12 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
     positive = [
         s.confidence
         for s in usable
-        if s.details.get("verdict") == VerificationResult.VERIFIED.value
-        or s.details.get("verdict") == "authentic"
+        if s.details.get("verdict") in {VerificationResult.VERIFIED.value, "authentic"}
     ]
     negative = [
         s.confidence
         for s in usable
-        if s.details.get("verdict")
-        in {"manipulated", "ai_generated", "inauthentic"}
+        if s.details.get("verdict") in {"manipulated", "ai_generated", "inauthentic"}
     ]
 
     if not positive and not negative:
