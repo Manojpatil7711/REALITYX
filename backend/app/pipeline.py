@@ -7,8 +7,6 @@ from .engines import ENGINE_REGISTRY, EngineContext
 
 logger = logging.getLogger("realityx.pipeline")
 
-_MAX_WORKERS = max(1, min(8, len(ENGINE_REGISTRY)))
-
 
 def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
     engine = engine_type()
@@ -24,28 +22,11 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
             details={k: v for k, v in result.items() if k not in {"status", "summary"}},
             latency_ms=elapsed,
         )
-        logger.info(
-            "signal completed",
-            extra={
-                "verification_id": context.verification_id,
-                "signal_name": engine.name,
-                "status": status.value,
-                "latency_ms": round(elapsed, 3),
-            },
-        )
+        logger.info("signal completed", extra={"verification_id": context.verification_id, "signal_name": engine.name, "status": status.value, "latency_ms": round(elapsed, 3)})
         return evidence
     except Exception:
         elapsed = (time.perf_counter() - started) * 1000
-        logger.exception(
-            "signal failed",
-            extra={
-                "verification_id": context.verification_id,
-                "signal_name": engine.name,
-                "status": "failed",
-                "latency_ms": round(elapsed, 3),
-                "error_code": "SIGNAL_FAILURE",
-            },
-        )
+        logger.exception("signal failed", extra={"verification_id": context.verification_id, "signal_name": engine.name, "status": "failed", "latency_ms": round(elapsed, 3), "error_code": "SIGNAL_FAILURE"})
         return Evidence(
             signal=engine.name,
             status=SignalStatus.FAILED,
@@ -56,12 +37,12 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
 
 def run_signal_pipeline(data: bytes, verification_id: str, media_sha256: str) -> list[Evidence]:
     context = EngineContext(verification_id=verification_id, media_sha256=media_sha256)
+    engine_types = tuple(ENGINE_REGISTRY)
+    if not engine_types:
+        return []
 
-    with ThreadPoolExecutor(max_workers=_MAX_WORKERS, thread_name_prefix="rx-signal") as executor:
-        futures = [
-            executor.submit(_run_engine, engine_type, data, context)
-            for engine_type in ENGINE_REGISTRY
-        ]
-        results = [future.result() for future in futures]
-
-    return results
+    # Resolve workers from the active registry on every invocation.
+    max_workers = max(1, min(8, len(engine_types)))
+    with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="rx-signal") as executor:
+        futures = [executor.submit(_run_engine, engine_type, data, context) for engine_type in engine_types]
+        return [future.result() for future in futures]
