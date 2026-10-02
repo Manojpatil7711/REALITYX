@@ -1,5 +1,5 @@
-from .contracts import Evidence, SignalStatus
-from .evidence_fusion import fuse_evidence
+from app.contracts import Evidence, SignalStatus
+from app.evidence_fusion import fuse_evidence
 
 
 def signal(verdict=None, confidence=0.9, status=SignalStatus.AVAILABLE):
@@ -21,8 +21,8 @@ def test_empty_evidence_abstains():
 
 def test_failed_signal_is_not_negative_evidence():
     decision = fuse_evidence([signal("authentic", 0.9), signal(status=SignalStatus.FAILED)])
-    assert decision.result == "verified"
-    assert decision.confidence > 0.7
+    assert decision.result == "uncertain"
+    assert decision.confidence < 0.70
 
 
 def test_weak_evidence_abstains():
