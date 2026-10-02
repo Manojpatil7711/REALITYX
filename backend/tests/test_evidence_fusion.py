@@ -2,10 +2,10 @@ from app.contracts import Evidence, SignalStatus, VerificationResult
 from app.evidence_fusion import fuse_evidence
 
 
-def signal(verdict=None, confidence=0.9, status=SignalStatus.AVAILABLE):
+def signal(verdict=None, confidence=0.9, status=SignalStatus.AVAILABLE, name="test"):
     details = {} if verdict is None else {"verdict": verdict}
     return Evidence(
-        signal="test",
+        signal=name,
         status=status,
         summary="test",
         details=details,
@@ -48,3 +48,18 @@ def test_consistent_negative_evidence_can_be_inauthentic():
 def test_missing_verdict_does_not_create_a_public_verdict():
     decision = fuse_evidence([signal(None, 0.99)])
     assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.confidence == 0.0
+
+
+def test_factual_signals_do_not_inflate_verdict_coverage():
+    verdict_only = fuse_evidence([signal("authentic", 0.9, name="model")])
+
+    with_facts = fuse_evidence([
+        signal("authentic", 0.9, name="model"),
+        signal(None, 1.0, name="integrity"),
+        signal(None, 1.0, name="image_structure"),
+        signal(None, 1.0, name="metadata"),
+    ])
+
+    assert with_facts.result is verdict_only.result
+    assert with_facts.confidence == verdict_only.confidence
