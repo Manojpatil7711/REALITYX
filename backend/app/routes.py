@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 from fastapi import APIRouter, File, Header, HTTPException, Request, UploadFile
+from starlette.concurrency import run_in_threadpool
 from .contracts import VerificationResponse
 from .idempotency import store
 from .pipeline import run_signal_pipeline
@@ -61,7 +62,7 @@ async def verify_image(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     verification_id = str(uuid.uuid4())
-    signals = run_signal_pipeline(data, verification_id, fingerprint)
+    signals = await run_in_threadpool(run_signal_pipeline, data, verification_id, fingerprint)
     response = VerificationResponse(
         verification_id=verification_id,
         sha256=fingerprint,
