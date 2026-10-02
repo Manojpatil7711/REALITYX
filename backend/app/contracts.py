@@ -31,6 +31,22 @@ class VerificationResult(StrEnum):
     UNCERTAIN = "uncertain"
 
 
+class VerificationArtifact(BaseModel):
+    """Portable, signed-verification-ready receipt; not a legal certification."""
+    model_config = ConfigDict(extra="forbid")
+    artifact_version: str = "1.0"
+    protocol_version: str = PROTOCOL_VERSION
+    verification_id: str
+    media_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    result: VerificationResult
+    confidence: float = Field(ge=0.0, le=1.0)
+    engine_version: str = ENGINE_VERSION
+    evidence_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    issuer: str = "REALITYX"
+    signature_algorithm: str | None = None
+    signature: str | None = None
+
+
 class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
     signal: str
