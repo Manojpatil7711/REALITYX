@@ -19,14 +19,32 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
             signal=engine.name,
             status=status,
             summary=result.get("summary", "तपासणी पूर्ण झाली."),
-            details={k: v for k, v in result.items() if k not in {"status", "summary"}},
+            details={k: v for k, v in result.items() if k not in {"status", "summary", "confidence"}},
+            confidence=result.get("confidence"),
             latency_ms=elapsed,
         )
-        logger.info("signal completed", extra={"verification_id": context.verification_id, "signal_name": engine.name, "status": status.value, "latency_ms": round(elapsed, 3)})
+        logger.info(
+            "signal completed",
+            extra={
+                "verification_id": context.verification_id,
+                "signal_name": engine.name,
+                "status": status.value,
+                "latency_ms": round(elapsed, 3),
+            },
+        )
         return evidence
     except Exception:
         elapsed = (time.perf_counter() - started) * 1000
-        logger.exception("signal failed", extra={"verification_id": context.verification_id, "signal_name": engine.name, "status": "failed", "latency_ms": round(elapsed, 3), "error_code": "SIGNAL_FAILURE"})
+        logger.exception(
+            "signal failed",
+            extra={
+                "verification_id": context.verification_id,
+                "signal_name": engine.name,
+                "status": "failed",
+                "latency_ms": round(elapsed, 3),
+                "error_code": "SIGNAL_FAILURE",
+            },
+        )
         return Evidence(
             signal=engine.name,
             status=SignalStatus.FAILED,
