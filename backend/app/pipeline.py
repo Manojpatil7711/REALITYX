@@ -2,7 +2,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .contracts import Evidence, SignalStatus, SignalVerdict
+from .contracts import Evidence, EvidenceKind, SignalStatus, SignalVerdict
 from .engines import ENGINE_REGISTRY, EngineContext
 
 logger = logging.getLogger("realityx.pipeline")
@@ -20,6 +20,7 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
         evidence = Evidence(
             signal=engine.name,
             status=status,
+            kind=EvidenceKind.VERDICT if verdict is not None else EvidenceKind.FACT,
             summary=result.get("summary", "तपासणी पूर्ण झाली."),
             details={k: v for k, v in result.items() if k not in {"status", "summary", "confidence", "verdict"}},
             verdict=verdict,
@@ -32,6 +33,7 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
                 "verification_id": context.verification_id,
                 "signal_name": engine.name,
                 "status": status.value,
+                "kind": evidence.kind.value,
                 "latency_ms": round(elapsed, 3),
             },
         )
