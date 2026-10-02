@@ -5,6 +5,7 @@ from starlette.concurrency import run_in_threadpool
 from .contracts import VerificationResponse
 from .idempotency import store
 from .pipeline import run_signal_pipeline
+from .evidence_fusion import fuse_evidence
 from .rate_limit import image_verify_limiter
 from .security import MAX_UPLOAD_BYTES, inspect_image, _magic_type
 
@@ -63,13 +64,14 @@ async def verify_image(
 
     verification_id = str(uuid.uuid4())
     signals = await run_in_threadpool(run_signal_pipeline, data, verification_id, fingerprint)
+    decision = fuse_evidence(signals)
     response = VerificationResponse(
         verification_id=verification_id,
         sha256=fingerprint,
-        result="uncertain",
-        confidence=0.0,
+        result=decision.result,
+        confidence=decision.confidence,
         signals=signals,
-        evidence=[],
+        evidence=decision.evidence,
     )
     store.put(idempotency_key, fingerprint, response.model_dump())
     return response
