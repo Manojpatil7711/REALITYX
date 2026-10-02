@@ -1,7 +1,7 @@
 import time
 
 from app import pipeline
-from app.contracts import SignalStatus
+from app.contracts import SignalStatus, SignalVerdict
 from app.engines.base import SignalEngine
 
 
@@ -29,7 +29,7 @@ def test_independent_engines_run_concurrently(monkeypatch):
     assert elapsed < 0.09
 
 
-def test_engine_confidence_is_preserved():
+def test_engine_confidence_and_verdict_are_preserved():
     class ConfidenceEngine(SignalEngine):
         name = "confidence_test"
 
@@ -49,4 +49,5 @@ def test_engine_confidence_is_preserved():
 
     assert evidence.status is SignalStatus.AVAILABLE
     assert evidence.confidence == 0.83
-    assert evidence.details["verdict"] == "authentic"
+    assert evidence.verdict is SignalVerdict.AUTHENTIC
+    assert "verdict" not in evidence.details
