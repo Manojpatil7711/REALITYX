@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import sqrt
 
-from .contracts import Evidence, SignalStatus, SignalVerdict, VerificationResult
+from .contracts import Evidence, EvidenceKind, SignalStatus, SignalVerdict, VerificationResult
 
 
 @dataclass(frozen=True)
@@ -23,8 +23,12 @@ def _usable(signals: list[Evidence]) -> list[Evidence]:
 
 
 def _verdict_signals(signals: list[Evidence]) -> list[Evidence]:
-    """Return only available signals with a formal verdict."""
-    return [signal for signal in _usable(signals) if signal.verdict is not None]
+    """Return only available evidence explicitly classified as verdict-bearing."""
+    return [
+        signal
+        for signal in _usable(signals)
+        if signal.kind is EvidenceKind.VERDICT and signal.verdict is not None
+    ]
 
 
 def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
