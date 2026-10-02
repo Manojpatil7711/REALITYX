@@ -1,4 +1,4 @@
-from app.contracts import Evidence, SignalStatus, SignalVerdict, VerificationResult
+from app.contracts import Evidence, EvidenceKind, SignalStatus, SignalVerdict, VerificationResult
 from app.evidence_fusion import fuse_evidence
 
 
@@ -7,6 +7,7 @@ def signal(verdict=None, confidence=0.9, status=SignalStatus.AVAILABLE, name="te
         signal=name,
         status=status,
         summary="test",
+        kind=EvidenceKind.VERDICT if verdict is not None else EvidenceKind.FACT,
         verdict=SignalVerdict(verdict) if verdict is not None else None,
         confidence=confidence,
     )
