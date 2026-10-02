@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import sqrt
 
-from .contracts import Evidence, SignalStatus, VerificationResult
+from .contracts import Evidence, SignalStatus, SignalVerdict, VerificationResult
 
 
 @dataclass(frozen=True)
@@ -11,15 +11,6 @@ class FusionDecision:
     result: VerificationResult
     confidence: float
     evidence: list[Evidence]
-
-
-_VERIFIED_VERDICTS = {VerificationResult.VERIFIED.value, "authentic"}
-_INAUTHENTIC_VERDICTS = {
-    "manipulated",
-    "ai_generated",
-    "inauthentic",
-}
-_VERDICT_VALUES = _VERIFIED_VERDICTS | _INAUTHENTIC_VERDICTS
 
 
 def _usable(signals: list[Evidence]) -> list[Evidence]:
@@ -32,39 +23,33 @@ def _usable(signals: list[Evidence]) -> list[Evidence]:
 
 
 def _verdict_signals(signals: list[Evidence]) -> list[Evidence]:
-    """Return only available signals that explicitly make a verdict claim."""
-    return [
-        signal
-        for signal in _usable(signals)
-        if signal.details.get("verdict") in _VERDICT_VALUES
-    ]
+    """Return only available signals with a formal verdict."""
+    return [signal for signal in _usable(signals) if signal.verdict is not None]
 
 
 def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
-    """Fuse explicit verdict-bearing signals; factual evidence never inflates confidence."""
-    usable = _usable(signals)
-    verdict_signals = _verdict_signals(usable)
+    """Fuse formal verdict-bearing signals; factual evidence never inflates confidence."""
+    verdict_signals = _verdict_signals(signals)
     if not verdict_signals:
         return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
 
     positive = [
-        s.confidence
-        for s in verdict_signals
-        if s.details.get("verdict") in _VERIFIED_VERDICTS
+        s.confidence for s in verdict_signals
+        if s.verdict in {SignalVerdict.AUTHENTIC, SignalVerdict.VERIFIED}
     ]
     negative = [
-        s.confidence
-        for s in verdict_signals
-        if s.details.get("verdict") in _INAUTHENTIC_VERDICTS
+        s.confidence for s in verdict_signals
+        if s.verdict in {
+            SignalVerdict.MANIPULATED,
+            SignalVerdict.AI_GENERATED,
+            SignalVerdict.INAUTHENTIC,
+        }
     ]
 
     p = sum(positive) / len(positive) if positive else 0.0
     n = sum(negative) / len(negative) if negative else 0.0
     support = max(p, n)
     agreement = 1.0 if not positive or not negative else max(0.0, 1.0 - abs(p - n))
-
-    # Coverage measures the number of independent verdict-bearing signals,
-    # not the number of raw/factual signals in the pipeline.
     coverage = min(1.0, sqrt(len(verdict_signals) / 3.0))
     confidence = round(max(0.0, min(1.0, support * agreement * coverage)), 4)
 
