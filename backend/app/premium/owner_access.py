@@ -12,12 +12,27 @@ import hashlib
 import hmac
 import os
 
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Request
+
+from ..rate_limit import FixedWindowRateLimiter
 
 _ENV_NAME = "REALITYX_OWNER_MASTER_KEY"
+_OWNER_LIMITER = FixedWindowRateLimiter(limit=10, window_seconds=60)
 
 
-def require_owner(x_realityx_master_key: str | None = Header(default=None)) -> None:
+def require_owner(
+    request: Request,
+    x_realityx_master_key: str | None = Header(default=None),
+) -> None:
+    identity = request.client.host if request.client else "unknown"
+    decision = _OWNER_LIMITER.check(identity)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many owner authentication attempts; please try again later.",
+            headers={"Retry-After": str(decision.retry_after_seconds)},
+        )
+
     configured = os.getenv(_ENV_NAME)
     if not configured:
         raise HTTPException(status_code=503, detail="Owner control plane is not configured")
