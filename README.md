@@ -119,3 +119,15 @@ Every roadmap feature must preserve working workflows and pass regression/securi
 ## Status
 
 Premium 2050 foundation and gated roadmap established. Advanced paid infrastructure is intentionally **not activated by default**. Current priority remains a stable, secure free-first verification core that can accumulate legitimate traffic before costly services are enabled.
+
+## SEO and Google readiness
+
+REALITYX treats SEO as part of the roadmap, not a last-minute submission step.
+
+- Public, indexable routes are the only candidates for the sitemap.
+- API, admin, owner and private operational paths are excluded from crawling.
+- The canonical URL, sitemap URLs and production host must resolve to the same preferred origin.
+- Next.js generates `/sitemap.xml` and `/robots.txt` from code so route changes can be reviewed with the roadmap instead of relying on manual edits.
+- Production URL resolution uses `NEXT_PUBLIC_SITE_URL` when configured, otherwise Vercel's production URL; the local fallback is never intended as the production canonical.
+- Before Google Search Console submission: production build/CI must be GREEN, canonical/robots/sitemap must be checked, redirects and duplicate hosts must be reviewed, and the public sitemap must be reachable.
+- New public pages must add metadata, internal links and sitemap coverage together; private/API endpoints are never added to the sitemap.
