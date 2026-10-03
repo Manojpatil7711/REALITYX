@@ -2,6 +2,8 @@ import base64
 import io
 import uuid
 
+import pytest
+
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -11,6 +13,15 @@ from app.main import app
 from app.receipt_store import store
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_receipt_state():
+    registry._keys.clear()
+    store._items.clear()
+    yield
+    registry._keys.clear()
+    store._items.clear()
 
 
 def _png() -> bytes:
