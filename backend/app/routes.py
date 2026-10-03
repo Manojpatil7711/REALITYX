@@ -2,12 +2,15 @@ import hashlib
 import uuid
 from fastapi import APIRouter, File, Header, HTTPException, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
+from .attestation import build_artifact
 from .contracts import VerificationResponse
 from .idempotency import store
 from .pipeline import run_signal_pipeline
 from .evidence_fusion import fuse_evidence
 from .rate_limit import image_verify_limiter
 from .security import MAX_UPLOAD_BYTES, inspect_image, _magic_type
+from .receipt_store import store as receipt_store
+from .signing import sign_artifact
 
 router = APIRouter()
 ALLOWED_FORMATS = {"jpeg", "png", "webp"}
@@ -74,4 +77,5 @@ async def verify_image(
         evidence=decision.evidence,
     )
     store.put(idempotency_key, fingerprint, response.model_dump())
+    receipt_store.put(sign_artifact(build_artifact(response)))
     return response
