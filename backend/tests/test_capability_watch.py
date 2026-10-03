@@ -34,6 +34,4 @@ def test_compare_detects_added_engine_without_mutating_policy():
 
     assert report["changed"] is True
     assert report["protocol_changed"] is False
-    assert ("test_capability_watch.EngineB", "1.0.0") in {
-        (name, version, module) for name, version, module in report["added"]
-    }
+    assert any(name == "engine-b" and version == "1.0.0" for name, version, _ in report["added"])
