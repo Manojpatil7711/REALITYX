@@ -10,6 +10,25 @@ const types = [
   ["URL","Source, domain and content trust signals"],
 ];
 
+const premiumCapabilities = [
+  ["MULTIMODAL FORENSICS","Independent image, video, audio and document evidence engines."],
+  ["EVIDENCE FUSION","Conservative cross-signal reasoning with abstention when evidence conflicts."],
+  ["CRYPTOGRAPHIC ATTESTATION","Signed receipts bound to the exact artifact, protocol and verification time."],
+  ["KEY TRUST & REVOCATION","Registered signing keys, lifecycle controls and future transparency infrastructure."],
+  ["AI-AGENT TRUST API","Machine-readable verification results designed for policy-driven agent decisions."],
+  ["C2PA / PROVENANCE","Interoperability boundary for provenance-aware media and future standards."],
+  ["SECURITY-FIRST INGESTION","Parser validation, resource limits, isolated analysis and minimal retention."],
+  ["AUDIT & REPRODUCIBILITY","Versioned protocols, evidence provenance and reproducible verification records."],
+];
+
+const securityLayers = [
+  ["01","ZERO-TRUST","Treat every upload, parser, model and external signal as untrusted."],
+  ["02","DEFENCE IN DEPTH","Layered limits, authentication, isolation, rate controls and integrity checks."],
+  ["03","CRYPTOGRAPHIC TRUST","Artifact hashes, signed receipts, registered keys and revocation-aware verification."],
+  ["04","AI SAFETY","No single-model truth claims; contradictory evidence can produce UNCERTAIN."],
+  ["05","FUTURE CONFORMANCE","Protocol versioning and explicit boundaries for audits, accreditation and certification."],
+];
+
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName,setFileName] = useState("");
@@ -19,8 +38,6 @@ export default function Home() {
     const file = inputRef.current?.files?.[0];
     if (!file) { inputRef.current?.click(); return; }
     setChecking(true);
-    // The verification API is intentionally kept behind an environment boundary.
-    // The public UI remains usable while backend deployment evolves.
     await new Promise(r => setTimeout(r, 450));
     setChecking(false);
   }
@@ -29,14 +46,19 @@ export default function Home() {
     <main>
       <nav className="nav">
         <div className="brand"><span className="mark">R</span> REALITYX</div>
-        <div className="navlinks"><a href="#how">How it works</a><a href="#plans">Plans</a><a href="#developers">Developers</a></div>
+        <div className="navlinks">
+          <a href="#how">How it works</a>
+          <a href="#premium">Premium 2050</a>
+          <a href="#security">Security</a>
+          <a href="#developers">Developers</a>
+        </div>
         <button className="ghost">Sign in</button>
       </nav>
 
       <section className="hero">
         <div className="eyebrow">REALITY VERIFICATION INFRASTRUCTURE</div>
         <h1>Verify what’s real.</h1>
-        <p className="lead">Fast, evidence-based analysis for the digital content you rely on.</p>
+        <p className="lead">A future-ready evidence layer for digital reality — built for people, platforms, institutions and AI agents.</p>
 
         <div className="verifyCard">
           <div className="drop" onClick={()=>inputRef.current?.click()}>
@@ -57,23 +79,63 @@ export default function Home() {
 
       <section className="explain" id="how">
         <div><div className="eyebrow">NOT A GUESS</div><h2>Evidence before certainty.</h2></div>
-        <p>REALITYX combines independent signals, provenance and forensic analysis instead of trusting a single AI model. Results can be authentic, uncertain or likely manipulated — with the evidence explained.</p>
+        <p>REALITYX combines independent signals, provenance and forensic analysis instead of trusting a single AI model. Results can be verified, uncertain or likely inauthentic — with the evidence and limitations exposed.</p>
       </section>
 
       <section className="layers">
         <div><span>01</span><b>Fast checks</b><p>Hash, metadata, provenance and integrity signals run first.</p></div>
-        <div><span>02</span><b>Evidence fusion</b><p>Independent engines run in parallel and are combined.</p></div>
+        <div><span>02</span><b>Evidence fusion</b><p>Independent engines run in parallel and are combined conservatively.</p></div>
         <div><span>03</span><b>Deep verification</b><p>Expensive analysis is triggered only when it can improve the answer.</p></div>
       </section>
 
+      <section className="premium2050" id="premium">
+        <div className="sectionHead">
+          <div>
+            <div className="eyebrow">PREMIUM 2050 ARCHITECTURE</div>
+            <h2>Built for the next generation of digital trust.</h2>
+          </div>
+          <p>Premium capabilities are designed as secure, independently gated layers. A capability is not advertised as active until its implementation, tests and production controls are verified.</p>
+        </div>
+        <div className="capGrid">
+          {premiumCapabilities.map(([title,desc])=>(
+            <div className="cap" key={title}>
+              <span className="capMark">◆</span>
+              <div><b>{title}</b><p>{desc}</p></div>
+            </div>
+          ))}
+        </div>
+        <div className="futureBanner">
+          <div><span className="statusDot"/> <b>2050-ready principle</b></div>
+          <p>Protocol versioning, cryptographic receipts, revocation, reproducibility and explicit governance boundaries are foundational — not decorative promises.</p>
+        </div>
+      </section>
+
+      <section className="securitySection" id="security">
+        <div className="sectionHead">
+          <div>
+            <div className="eyebrow">TOP SECURITY BASELINE</div>
+            <h2>Security is part of the verification engine.</h2>
+          </div>
+          <p>REALITYX follows a defence-in-depth model. High-risk components remain isolated, least-privileged and evidence-driven.</p>
+        </div>
+        <div className="securityGrid">
+          {securityLayers.map(([num,title,desc])=>(
+            <div className="securityCard" key={num}><span>{num}</span><b>{title}</b><p>{desc}</p></div>
+          ))}
+        </div>
+      </section>
+
       <section className="plans" id="plans">
-        <div><div className="eyebrow">START FREE</div><h2>Useful from the first check.</h2></div>
+        <div><div className="eyebrow">ACCESS MODEL</div><h2>Start free. Scale with trust.</h2></div>
         <div className="plan"><b>Free</b><p>Quick verification and essential evidence.</p></div>
-        <div className="plan premium"><b>Premium</b><p>Deeper analysis, larger media, reports and history.</p></div>
+        <div className="plan premium"><b>Premium</b><p>Deeper analysis, advanced evidence, reports and controlled history as the corresponding services become production-ready.</p></div>
         <div className="plan"><b>Business</b><p>Teams, API, audit workflows and controlled verification.</p></div>
       </section>
 
-      <section className="developers" id="developers"><div><div className="eyebrow">BUILT TO SCALE</div><h2>One verification layer.<br/>Many industries.</h2></div><p>Newsrooms, finance, insurance, marketplaces, legal workflows, government systems and future AI agents can connect through the same evidence-first core.</p></section>
+      <section className="developers" id="developers">
+        <div><div className="eyebrow">BUILT TO SCALE</div><h2>One verification layer.<br/>Many industries.</h2></div>
+        <p>Newsrooms, finance, insurance, marketplaces, legal workflows, government systems and future AI agents can connect through the same evidence-first core. Verification is separate from attestation, and attestation is separate from certification.</p>
+      </section>
 
       <footer><div className="brand"><span className="mark">R</span> REALITYX</div><span>VERIFY WHAT’S REAL.</span><span>© 2026 REALITYX</span></footer>
     </main>
