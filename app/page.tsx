@@ -77,6 +77,23 @@ export default function Home() {
         {types.map(([name,desc])=><div className="type" key={name}><div className="dot"/><div><strong>{name}</strong><span>{desc}</span></div></div>)}
       </section>
 
+      <section className="purpose" aria-label="Choose your verification purpose">
+        <div className="purposeHead">
+          <div>
+            <div className="eyebrow">START WITHOUT CONFUSION</div>
+            <h2>Why are you here?</h2>
+          </div>
+          <p>Choose the closest purpose. REALITYX keeps the same evidence-first engine underneath; only the workflow guidance changes.</p>
+        </div>
+        <div className="purposeGrid">
+          <div className="purposeCard"><b>Government</b><span>Submitted material → verification → evidence → human decision</span></div>
+          <div className="purposeCard"><b>Legal / Investigation</b><span>Preserve → analyze → attest → review</span></div>
+          <div className="purposeCard"><b>News / Media</b><span>Screen → inspect signals → publish with context</span></div>
+          <div className="purposeCard"><b>Business / Platform</b><span>Automate → fuse evidence → escalate uncertainty</span></div>
+          <div className="purposeCard"><b>Personal</b><span>Upload → verify → understand the evidence</span></div>
+        </div>
+      </section>
+
       <section className="explain" id="how">
         <div><div className="eyebrow">NOT A GUESS</div><h2>Evidence before certainty.</h2></div>
         <p>REALITYX combines independent signals, provenance and forensic analysis instead of trusting a single AI model. Results can be verified, uncertain or likely inauthentic — with the evidence and limitations exposed.</p>
