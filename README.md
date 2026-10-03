@@ -40,6 +40,14 @@ Free-first rules:
 6. Record capability/dependency status without storing unnecessary originals.
 7. Activate recurring-cost infrastructure only after demand, reliability and budget justify it.
 
+## Capability watch — long-term AI resistance
+
+REALITYX must not depend on the assumption that today's AI detectors remain sufficient. The runtime now has a deterministic capability-watch foundation that fingerprints the active engine registry and protocol. Future model or benchmark adapters can report capability changes, evaluation results and drift without changing the core verdict contract.
+
+Operational rule: **new AI capability → measure → benchmark → compare against prior baseline → review limitations → gate deployment → update protocol/engine version**. A model is never treated as an authority merely because it is newer or more capable. This is a monitoring and re-validation system, not a claim of perfect prediction of future AI.
+
+The operator-facing workflow profiles also define clear paths for government, legal/investigation, media, business/platform and public verification so users are not forced to understand the underlying engineering.
+
 ## Trust-layer vision
 
 REALITYX is designed to become a **machine-verifiable reality verification layer** that AI agents, platforms, institutions, researchers, businesses, and people can query before trusting digital content.
