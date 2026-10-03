@@ -4,8 +4,10 @@ from .owner_routes import router as owner_router
 from .routes import router
 from .key_routes import router as key_router
 from .receipt_routes import router as receipt_router
+from .key_registry import load_env_key
 
 configure_logging()
+load_env_key()
 
 app = FastAPI(
     title="REALITYX Verification API",
