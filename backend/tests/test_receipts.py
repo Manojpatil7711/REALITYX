@@ -11,6 +11,7 @@ from PIL import Image
 from app.key_registry import PublicKeyRecord, registry
 from app.main import app
 from app.receipt_store import store
+from app.contracts import VerificationResult
 
 client = TestClient(app)
 
@@ -105,7 +106,7 @@ def test_receipt_signature_rejects_tampering(monkeypatch):
 
     artifact = store.get(verification_id)
     assert artifact is not None
-    store.put(artifact.model_copy(update={"result": "INAUTHENTIC"}))
+    store.put(artifact.model_copy(update={"result": VerificationResult.INAUTHENTIC}))
 
     response = client.get(f"/v1/receipts/{verification_id}/verify")
 
