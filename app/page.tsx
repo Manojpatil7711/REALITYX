@@ -29,17 +29,47 @@ const securityLayers = [
   ["05","FUTURE CONFORMANCE","Protocol versioning and explicit boundaries for audits, accreditation and certification."],
 ];
 
+type VerificationResult = {
+  verification_id?: string;
+  sha256?: string;
+  result?: string;
+  confidence?: number;
+  evidence?: string[];
+  signals?: unknown;
+};
+
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName,setFileName] = useState("");
   const [checking,setChecking] = useState(false);
+  const [result,setResult] = useState<VerificationResult | null>(null);
+  const [error,setError] = useState("");
 
   async function verify() {
     const file = inputRef.current?.files?.[0];
     if (!file) { inputRef.current?.click(); return; }
     setChecking(true);
-    await new Promise(r => setTimeout(r, 450));
-    setChecking(false);
+    setError("");
+    setResult(null);
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_REALITYX_API_URL;
+      if (!apiBase) throw new Error("Verification service is not connected yet.");
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch(`${apiBase.replace(/\/$/, "")}/v1/verify/image`, {
+        method: "POST",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: form,
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.detail || "Verification could not be completed.");
+      setResult(body);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification could not be completed.");
+    } finally {
+      setChecking(false);
+    }
   }
 
   return (
@@ -48,9 +78,9 @@ export default function Home() {
         <div className="brand"><span className="mark">R</span> REALITYX</div>
         <div className="navlinks">
           <a href="#how">How it works</a>
+          <a href="#intelligence">Intelligence</a>
           <a href="#premium">Premium 2050</a>
           <a href="#security">Security</a>
-          <a href="#developers">Developers</a>
         </div>
         <button className="ghost">Sign in</button>
       </nav>
@@ -64,12 +94,21 @@ export default function Home() {
           <div className="drop" onClick={()=>inputRef.current?.click()}>
             <div className="uploadIcon">↑</div>
             <h2>{checking ? "Verifying…" : "Drop something to verify"}</h2>
-            <p>Image, video, audio or document</p>
-            <input ref={inputRef} hidden type="file" onChange={e=>setFileName(e.target.files?.[0]?.name ?? "")} />
+            <p>Start with an image. Video, audio, documents and URL verification are designed as the next adapters.</p>
+            <input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{setFileName(e.target.files?.[0]?.name ?? "");setResult(null);setError("");}} />
             {fileName && <div className="filename">{fileName}</div>}
           </div>
-          <button className="primary" onClick={verify}>{checking ? "Analyzing…" : "Verify now"}</button>
-          <div className="privacy">Private by design · Evidence first · Uncertainty is reported</div>
+          <button className="primary" onClick={verify} disabled={checking}>{checking ? "Analyzing…" : "Verify now"}</button>
+          {error && <div className="verifyError" role="alert">{error}</div>}
+          {result && (
+            <div className="verifyResult" aria-live="polite">
+              <div className="resultTop"><span className="statusDot"/><b>{result.result ?? "UNCERTAIN"}</b>{typeof result.confidence === "number" && <span>{Math.round(result.confidence * 100)}% confidence</span>}</div>
+              <p>Evidence is shown as a verification signal, not as an absolute truth claim.</p>
+              {result.sha256 && <code>{result.sha256}</code>}
+              {result.verification_id && <small>Verification ID: {result.verification_id}</small>}
+            </div>
+          )}
+          {!result && !error && <div className="privacy">Private by design · Evidence first · Uncertainty is reported</div>}
         </div>
       </section>
 
@@ -79,10 +118,7 @@ export default function Home() {
 
       <section className="purpose" aria-label="Choose your verification purpose">
         <div className="purposeHead">
-          <div>
-            <div className="eyebrow">START WITHOUT CONFUSION</div>
-            <h2>Why are you here?</h2>
-          </div>
+          <div><div className="eyebrow">START WITHOUT CONFUSION</div><h2>Why are you here?</h2></div>
           <p>Choose the closest purpose. REALITYX keeps the same evidence-first engine underneath; only the workflow guidance changes.</p>
         </div>
         <div className="purposeGrid">
@@ -127,38 +163,22 @@ export default function Home() {
 
       <section className="premium2050" id="premium">
         <div className="sectionHead">
-          <div>
-            <div className="eyebrow">PREMIUM 2050 ARCHITECTURE</div>
-            <h2>Built for the next generation of digital trust.</h2>
-          </div>
+          <div><div className="eyebrow">PREMIUM 2050 ARCHITECTURE</div><h2>Built for the next generation of digital trust.</h2></div>
           <p>Premium capabilities are designed as secure, independently gated layers. A capability is not advertised as active until its implementation, tests and production controls are verified.</p>
         </div>
         <div className="capGrid">
-          {premiumCapabilities.map(([title,desc])=>(
-            <div className="cap" key={title}>
-              <span className="capMark">◆</span>
-              <div><b>{title}</b><p>{desc}</p></div>
-            </div>
-          ))}
+          {premiumCapabilities.map(([title,desc])=><div className="cap" key={title}><span className="capMark">◆</span><div><b>{title}</b><p>{desc}</p></div></div>)}
         </div>
-        <div className="futureBanner">
-          <div><span className="statusDot"/> <b>2050-ready principle</b></div>
-          <p>Protocol versioning, cryptographic receipts, revocation, reproducibility and explicit governance boundaries are foundational — not decorative promises.</p>
-        </div>
+        <div className="futureBanner"><div><span className="statusDot"/> <b>2050-ready principle</b></div><p>Protocol versioning, cryptographic receipts, revocation, reproducibility and explicit governance boundaries are foundational — not decorative promises.</p></div>
       </section>
 
       <section className="securitySection" id="security">
         <div className="sectionHead">
-          <div>
-            <div className="eyebrow">TOP SECURITY BASELINE</div>
-            <h2>Security is part of the verification engine.</h2>
-          </div>
+          <div><div className="eyebrow">TOP SECURITY BASELINE</div><h2>Security is part of the verification engine.</h2></div>
           <p>REALITYX follows a defence-in-depth model. High-risk components remain isolated, least-privileged and evidence-driven.</p>
         </div>
         <div className="securityGrid">
-          {securityLayers.map(([num,title,desc])=>(
-            <div className="securityCard" key={num}><span>{num}</span><b>{title}</b><p>{desc}</p></div>
-          ))}
+          {securityLayers.map(([num,title,desc])=><div className="securityCard" key={num}><span>{num}</span><b>{title}</b><p>{desc}</p></div>)}
         </div>
       </section>
 
