@@ -6,6 +6,7 @@ import os
 
 from .attestation import canonical_json
 from .contracts import VerificationArtifact
+from .key_registry import registry
 
 
 ALGORITHM = "Ed25519"
@@ -27,10 +28,18 @@ def sign_artifact(artifact: VerificationArtifact) -> VerificationArtifact:
     if not key_b64 or not key_id:
         return artifact
 
+    record = registry.require_active(key_id)
+    if record.public_key == "":
+        raise RuntimeError("Registered signing key has no public key")
+
     try:
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
         raw = base64.b64decode(key_b64, validate=True)
         private_key = Ed25519PrivateKey.from_private_bytes(raw)
+        derived_public = private_key.public_key().public_bytes_raw()
+        registered_public = base64.b64decode(record.public_key, validate=True)
+        if derived_public != registered_public:
+            raise RuntimeError("Signing private key does not match registered public key")
         signature = private_key.sign(_payload(artifact))
     except (ValueError, TypeError) as exc:
         raise RuntimeError("Invalid REALITYX Ed25519 signing key") from exc
