@@ -1,8 +1,11 @@
 import base64
 
+import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from app.attestation import canonical_json
 from app.contracts import VerificationArtifact, VerificationResult
+from app.key_registry import PublicKeyRecord, registry
 from app.signing import artifact_digest, sign_artifact
 
 
@@ -16,6 +19,10 @@ def artifact():
     )
 
 
+def reset_registry():
+    registry._keys.clear()
+
+
 def test_digest_excludes_signature_fields():
     original = artifact()
     signed = original.model_copy(update={"signature_algorithm": "Ed25519:k1", "signature": "abc"})
@@ -23,16 +30,39 @@ def test_digest_excludes_signature_fields():
 
 
 def test_sign_artifact_with_env_key(monkeypatch):
+    reset_registry()
     private = Ed25519PrivateKey.generate()
     raw = private.private_bytes_raw()
+    public_raw = private.public_key().public_bytes_raw()
+    public_b64 = base64.b64encode(public_raw).decode()
     monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "k1")
     monkeypatch.setenv("REALITYX_SIGNING_PRIVATE_KEY_B64", base64.b64encode(raw).decode())
+    registry.register(PublicKeyRecord("k1", "Ed25519", public_b64, "active", "now"))
 
     signed = sign_artifact(artifact())
     assert signed.signature_algorithm == "Ed25519:k1"
     assert signed.signature is not None
-    public = private.public_key()
-    payload_artifact = signed.model_copy(update={"signature": None, "signature_algorithm": None})
-    from app.attestation import canonical_json
-    payload = canonical_json(payload_artifact.model_dump(mode="json", exclude={"signature", "signature_algorithm"}))
-    public.verify(base64.b64decode(signed.signature), payload)
+    payload = canonical_json(signed.model_dump(mode="json", exclude={"signature", "signature_algorithm"}))
+    private.public_key().verify(base64.b64decode(signed.signature), payload)
+
+
+def test_sign_artifact_rejects_unregistered_key(monkeypatch):
+    reset_registry()
+    private = Ed25519PrivateKey.generate()
+    monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "missing")
+    monkeypatch.setenv("REALITYX_SIGNING_PRIVATE_KEY_B64", base64.b64encode(private.private_bytes_raw()).decode())
+    with pytest.raises(RuntimeError, match="not registered"):
+        sign_artifact(artifact())
+
+
+def test_sign_artifact_rejects_mismatched_public_key(monkeypatch):
+    reset_registry()
+    private = Ed25519PrivateKey.generate()
+    other = Ed25519PrivateKey.generate()
+    registry.register(PublicKeyRecord(
+        "k1", "Ed25519", base64.b64encode(other.public_key().public_bytes_raw()).decode(), "active", "now"
+    ))
+    monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "k1")
+    monkeypatch.setenv("REALITYX_SIGNING_PRIVATE_KEY_B64", base64.b64encode(private.private_bytes_raw()).decode())
+    with pytest.raises(RuntimeError, match="does not match"):
+        sign_artifact(artifact())
