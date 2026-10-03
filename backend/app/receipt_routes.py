@@ -5,6 +5,9 @@ import uuid
 from fastapi import APIRouter, HTTPException
 
 from .receipt_store import store
+from .key_registry import registry
+from .attestation import canonical_json
+import base64
 from .signing import artifact_digest
 
 router = APIRouter(prefix="/receipts")
