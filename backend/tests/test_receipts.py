@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from app.key_registry import PublicKeyRecord, registry
 from app.main import app
 
 client = TestClient(app)
@@ -20,10 +21,12 @@ def _png() -> bytes:
 def test_receipt_is_published_after_verification(monkeypatch):
     private = Ed25519PrivateKey.generate()
     monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "test-key")
+    public_b64 = base64.b64encode(private.public_key().public_bytes_raw()).decode()
     monkeypatch.setenv(
         "REALITYX_SIGNING_PRIVATE_KEY_B64",
         base64.b64encode(private.private_bytes_raw()).decode(),
     )
+    registry.register(PublicKeyRecord("test-key", "Ed25519", public_b64, "active", "test"))
 
     verification_id = client.post(
         "/v1/verify/image",
