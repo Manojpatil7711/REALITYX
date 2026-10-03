@@ -1,9 +1,6 @@
-import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.premium.owner_access import require_owner
 
 client = TestClient(app)
 
@@ -40,3 +37,18 @@ def test_owner_control_plane_does_not_expose_secret(monkeypatch):
         headers={"x-realityx-master-key": "super-secret-value"},
     )
     assert "super-secret-value" not in response.text
+
+def test_owner_control_plane_rate_limits_repeated_attempts(monkeypatch):
+    monkeypatch.setenv("REALITYX_OWNER_MASTER_KEY", "test-owner-secret")
+    for _ in range(10):
+        response = client.get(
+            "/v1/owner/status",
+            headers={"x-realityx-master-key": "wrong-secret"},
+        )
+        assert response.status_code == 403
+    response = client.get(
+        "/v1/owner/status",
+        headers={"x-realityx-master-key": "wrong-secret"},
+    )
+    assert response.status_code == 429
+    assert response.headers["retry-after"]
