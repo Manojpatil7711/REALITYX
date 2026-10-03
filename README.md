@@ -4,6 +4,42 @@
 
 Reality verification infrastructure for detecting authentic, manipulated, synthetic, and uncertain digital content using multimodal forensics, provenance, and evidence fusion.
 
+## Premium 2050 operating roadmap
+
+REALITYX will expose advanced paid capabilities as **feature-gated services**, while keeping a useful free verification tier available for traffic growth and validation. Paid providers, GPU compute, external forensic APIs, signing infrastructure, premium storage, enterprise identity, and other recurring-cost services remain **inactive until technically necessary and explicitly activated**.
+
+### Product rule
+**Build the capability → keep it safely gated → run a free path where technically sound → measure demand → activate paid infrastructure only when the capability is needed and economically justified.**
+
+No paid service should silently replace a working free path. No premium badge means a capability is already production-ready unless its implementation, tests, security controls and operational dependencies have been verified.
+
+### Roadmap — execution order
+
+- **P0 Foundation:** stable verification contract, verdict semantics, evidence schema, upload limits, parser validation, regression tests and CI.
+- **P1 Forensics:** image/video/audio/document engines with isolated workers, deterministic versions and conservative scoring.
+- **P2 Evidence Fusion:** independent signals, provenance, negative evidence, conflict handling and explicit abstention to UNCERTAIN.
+- **P3 Trust Receipts:** artifact hash, protocol version, engine versions, evidence summary, timestamp, signed receipt format.
+- **P4 Key Infrastructure:** key registration, rotation, revocation, verification endpoint and transparency records.
+- **P5 AI-Agent API:** machine-readable verification/attestation endpoint, policy-friendly states, replay/idempotency protection and rate limits.
+- **P6 Provenance:** C2PA interoperability boundary and provenance-aware evidence.
+- **P7 Premium Controls:** authenticated premium access, usage quotas, feature flags, audit logs, billing-provider adapter and entitlement checks. Billing stays disabled until required.
+- **P8 Scale Security:** isolated jobs, queueing, resource quotas, abuse prevention, observability, incident controls and privacy/minimal retention.
+- **P9 Independent Assurance:** benchmark suite, reproducible evaluations, external security review readiness, conformance profiles and documented limitations.
+- **P10 Certification readiness:** only pursue external audit/accreditation/certification where an authorized body and applicable standard require it.
+
+### Free-first traffic mode
+
+The free tier is intended to remain genuinely useful for acquiring users and traffic while the platform is being validated. Premium architecture is present as a controlled roadmap, but expensive services are not required for every request.
+
+Free-first rules:
+1. Prefer local/open-source deterministic analysis when it is safe and adequate.
+2. Never expose a paid-provider key to the browser.
+3. Use server-side feature flags for premium capabilities.
+4. Fail safely when a paid provider is disabled or unavailable.
+5. Never downgrade a failed premium check into a misleading positive verdict.
+6. Record capability/dependency status without storing unnecessary originals.
+7. Activate recurring-cost infrastructure only after demand, reliability and budget justify it.
+
 ## Trust-layer vision
 
 REALITYX is designed to become a **machine-verifiable reality verification layer** that AI agents, platforms, institutions, researchers, businesses, and people can query before trusting digital content.
@@ -41,21 +77,6 @@ REALITYX does not claim that any single signal can prove truth with certainty. I
 
 Every result includes evidence and signal status.
 
-## Future trust & certification roadmap
-
-- Versioned verification protocol and public schema
-- Cryptographically signed verification receipts
-- Public receipt verification endpoint
-- Key rotation, revocation, and transparency records
-- Evidence provenance and tamper-evident audit chain
-- Independent benchmark reports and reproducible test suites
-- Conformance profiles for AI agents and platforms
-- C2PA/provenance interoperability boundary
-- External audit and accreditation readiness
-- Certification-program integration where an authorized authority recognizes the applicable standard
-
-**Important:** building these technical controls does not itself grant REALITYX legal, government, ISO, or regulatory recognition. Recognition must be obtained separately from the relevant authority or accreditation body.
-
 ## Architecture
 
 - Next.js — web interface
@@ -77,15 +98,16 @@ Every result includes evidence and signal status.
 - Structured JSON logging
 - Deterministic dependencies and reproducible builds
 - Minimal retention of user originals
+- Secrets only in managed server-side configuration
+- Premium entitlements enforced server-side
+- Safe failure and explicit uncertainty
 
-## Development
-
-Engineering workflow:
+## Engineering workflow
 
 **Architecture → Security → Code → Tests → Integration → Performance → Final Verification**
 
-Make it work. Make it right. Make it fast.
+Every roadmap feature must preserve working workflows and pass regression/security checks before being considered GREEN.
 
 ## Status
 
-Early foundation phase — verification protocol and trust-layer architecture are now being hardened for machine-verifiable attestations and future external certification/conformance work.
+Premium 2050 foundation and gated roadmap established. Advanced paid infrastructure is intentionally **not activated by default**. Current priority remains a stable, secure free-first verification core that can accumulate legitimate traffic before costly services are enabled.
