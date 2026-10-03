@@ -131,3 +131,13 @@ REALITYX treats SEO as part of the roadmap, not a last-minute submission step.
 - Production URL resolution uses `NEXT_PUBLIC_SITE_URL` when configured, otherwise Vercel's production URL; the local fallback is never intended as the production canonical.
 - Before Google Search Console submission: production build/CI must be GREEN, canonical/robots/sitemap must be checked, redirects and duplicate hosts must be reviewed, and the public sitemap must be reachable.
 - New public pages must add metadata, internal links and sitemap coverage together; private/API endpoints are never added to the sitemap.
+
+## Global intelligence layer
+
+REALITYX is designed to study the public, documented verification ecosystem rather than blindly integrate every AI product. The research surface covers AI tool capabilities and versions; image, video, voice and document forensic signals; public profile and social-media provenance; and trust standards such as C2PA/Content Credentials.
+
+Research inputs are restricted to user-provided material, consented data, public content, documented public APIs, official documentation/release notes, public benchmarks and open standards. The system must not harvest credentials, access private messages/accounts, covertly track people, build unauthorized social graphs, or infer identity without a lawful/consented basis.
+
+The current catalog is a policy boundary and adapter map, not a claim that every global AI tool is already connected. New providers/models are added through measured adapters: capability inventory → benchmark → limitation record → security review → gated deployment → capability fingerprint update.
+
+Current industry direction reinforces this architecture: provenance systems such as C2PA and watermarking such as SynthID are useful layers, but no single signal is sufficient for absolute authenticity. REALITYX therefore keeps provenance, forensic signals, evidence fusion and uncertainty as separate layers.
