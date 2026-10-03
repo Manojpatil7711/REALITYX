@@ -94,6 +94,26 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="intelligence" id="intelligence">
+        <div className="sectionHead">
+          <div><div className="eyebrow">GLOBAL INTELLIGENCE LAYER</div><h2>Study the signal ecosystem — without becoming a surveillance system.</h2></div>
+          <p>REALITYX can continuously compare documented AI capabilities, public provenance standards, media signals and user-supplied evidence. Private accounts, stolen credentials and unauthorized personal profiling stay outside the system.</p>
+        </div>
+        <div className="intelGrid">
+          {[
+            ["AI TOOLS","Capabilities · versions · limitations · benchmarks"],
+            ["IMAGE","Pixels · metadata · edits · provenance · watermark"],
+            ["VIDEO","Frames · codec · temporal consistency · provenance"],
+            ["VOICE","Spectral signals · watermark · provenance · consistency"],
+            ["DOCUMENT","Structure · metadata · signatures · tamper signals"],
+            ["PROFILES","Public claims · provenance · content consistency"],
+            ["SOCIAL MEDIA","Public context · reposts · timestamps · media integrity"],
+            ["TRUST STANDARDS","C2PA · Content Credentials · signatures · key status"],
+          ].map(([title,desc])=><div className="intelCard" key={title}><span>◆</span><b>{title}</b><p>{desc}</p></div>)}
+        </div>
+        <div className="intelRule"><b>Research rule</b><span>Public/documented sources + consented/user-provided material only. No credential harvesting, private-message access, covert tracking or identity inference.</span></div>
+      </section>
+
       <section className="explain" id="how">
         <div><div className="eyebrow">NOT A GUESS</div><h2>Evidence before certainty.</h2></div>
         <p>REALITYX combines independent signals, provenance and forensic analysis instead of trusting a single AI model. Results can be verified, uncertain or likely inauthentic — with the evidence and limitations exposed.</p>
