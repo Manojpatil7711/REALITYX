@@ -40,3 +40,5 @@ class FixedWindowRateLimiter:
 # Production multi-instance deployments must replace state with shared storage
 # while preserving this interface.
 image_verify_limiter = FixedWindowRateLimiter(limit=60, window_seconds=60)
+receipt_read_limiter = FixedWindowRateLimiter(limit=120, window_seconds=60)
+receipt_verify_limiter = FixedWindowRateLimiter(limit=60, window_seconds=60)
