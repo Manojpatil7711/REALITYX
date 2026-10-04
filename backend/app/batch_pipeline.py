@@ -20,7 +20,7 @@ from .document_classification import (
     classify_document,
 )
 from .document_identity import IdentityGroup, IdentitySignals, group_document_identities
-from .pdf_ingestion import PDFPageArtifact, separate_pdf_pages
+from .pdf_ingestion import PDFPageArtifact, extract_pdf_pages
 
 
 class OCRProvider(Protocol):
@@ -77,16 +77,20 @@ def _ocr_pages(
     ocr: OCRProvider,
 ) -> tuple[tuple[PDFPageArtifact, ...], tuple[OCRPageResult, ...]]:
     if item.media_type == "application/pdf":
-        pages = separate_pdf_pages(
+        page_pairs = extract_pdf_pages(
             source_document_id=item.document_id,
             pdf_bytes=item.data,
         )
+        pages = tuple(artifact for artifact, _page_bytes in page_pairs)
         texts = tuple(
             OCRPageResult(
-                page_number=page.page_number,
-                text=ocr.extract_text(data=item.data, media_type=item.media_type),
+                page_number=artifact.page_number,
+                text=ocr.extract_text(
+                    data=page_bytes,
+                    media_type="application/pdf-page",
+                ),
             )
-            for page in pages
+            for artifact, page_bytes in page_pairs
         )
         return pages, texts
 
