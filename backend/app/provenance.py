@@ -47,7 +47,7 @@ def provenance_digest(records: Iterable[ProvenanceRecord]) -> str:
         (record.model_dump(mode="json") for record in records),
         key=lambda item: canonical_json(item),
     )
-    payload = repr(canonical).encode("utf-8")
+    payload = canonical_json(canonical).encode("utf-8")
     return sha256(payload).hexdigest()
 
 
