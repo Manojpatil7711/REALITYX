@@ -17,6 +17,7 @@ from .signing import sign_artifact
 router = APIRouter()
 ALLOWED_FORMATS = {"jpeg", "png", "webp"}
 
+
 @router.post("/verify/image", response_model=VerificationResponse)
 async def verify_image(
     request: Request,
@@ -56,45 +57,57 @@ async def verify_image(
 
     fingerprint = hashlib.sha256(data).hexdigest()
     try:
-        cached = store.get(idempotency_key, fingerprint)
-    except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    if cached is not None:
-        return VerificationResponse.model_validate(cached)
-
-    try:
         inspect_image(data)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    verification_id = str(uuid.uuid4())
-    signals = await run_in_threadpool(run_signal_pipeline, data, verification_id, fingerprint)
-    decision = fuse_evidence(signals)
-    risk = assess_risk(signals)
-    unified = evaluate_verification(
-        signals,
-        fusion_result=decision.result,
-        fusion_confidence=decision.confidence,
-        fusion_conflict=decision.conflict,
-    )
-    response = VerificationResponse(
-        verification_id=verification_id,
-        sha256=fingerprint,
-        result=unified.result,
-        confidence=unified.confidence,
-        signals=signals,
-        evidence=decision.evidence,
-        risk_domain=risk.domain.value,
-        risk_level=risk.level.value,
-        risk_action=risk.action.value,
-        risk_confidence=risk.confidence,
-        risk_reasons=list(unified.risk.reasons),
-        policy_version=unified.policy_version,
-        authority_status=unified.authority_status.value,
-        independent_source_count=unified.independent_source_count,
-        conflict=unified.conflict,
-        evidence_graph_digest=unified.evidence_graph_digest,
-    )
-    store.put(idempotency_key, fingerprint, response.model_dump())
-    receipt_store.put(sign_artifact(build_artifact(response)))
-    return response
+    try:
+        cached, claimed = store.claim(idempotency_key, fingerprint)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    if cached is not None:
+        return VerificationResponse.model_validate(cached)
+
+    if not claimed:
+        raise HTTPException(
+            status_code=409,
+            detail="Verification with this Idempotency-Key is already in progress; please retry.",
+            headers={"Retry-After": "2"},
+        )
+
+    try:
+        verification_id = str(uuid.uuid4())
+        signals = await run_in_threadpool(run_signal_pipeline, data, verification_id, fingerprint)
+        decision = fuse_evidence(signals)
+        risk = assess_risk(signals)
+        unified = evaluate_verification(
+            signals,
+            fusion_result=decision.result,
+            fusion_confidence=decision.confidence,
+            fusion_conflict=decision.conflict,
+        )
+        response = VerificationResponse(
+            verification_id=verification_id,
+            sha256=fingerprint,
+            result=unified.result,
+            confidence=unified.confidence,
+            signals=signals,
+            evidence=decision.evidence,
+            risk_domain=risk.domain.value,
+            risk_level=risk.level.value,
+            risk_action=risk.action.value,
+            risk_confidence=risk.confidence,
+            risk_reasons=list(unified.risk.reasons),
+            policy_version=unified.policy_version,
+            authority_status=unified.authority_status.value,
+            independent_source_count=unified.independent_source_count,
+            conflict=unified.conflict,
+            evidence_graph_digest=unified.evidence_graph_digest,
+        )
+        receipt_store.put(sign_artifact(build_artifact(response)))
+        store.put(idempotency_key, fingerprint, response.model_dump())
+        return response
+    except Exception:
+        store.release(idempotency_key, fingerprint)
+        raise
