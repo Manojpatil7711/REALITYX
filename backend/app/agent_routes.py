@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import uuid
+import hashlib
+import json
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
@@ -11,6 +14,13 @@ from .receipt_store import store as receipt_store
 from .rate_limit import receipt_read_limiter
 
 router = APIRouter(prefix="/agent")
+
+
+def _canonical_response_digest(payload: dict) -> str:
+    canonical = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def require_agent_key(
@@ -63,7 +73,7 @@ def get_agent_trust(
         if record and record.algorithm == algorithm:
             key_status = record.status
 
-    return {
+    response = {
         "protocol": "REALITYX-AI-AGENT-TRUST",
         "protocol_version": "1.0",
         "verification_id": verification_id,
@@ -83,3 +93,6 @@ def get_agent_trust(
         "trust_document_digest": key_registry.public_document_digest(),
         "decision_boundary": "uncertainty_preserved",
     }
+    response["issued_at"] = datetime.now(timezone.utc).isoformat()
+    response["response_digest"] = _canonical_response_digest(response)
+    return response
