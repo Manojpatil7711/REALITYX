@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from threading import Lock
 from time import monotonic
+import hashlib
 
 
 @dataclass(frozen=True)
@@ -49,3 +50,15 @@ class FixedWindowRateLimiter:
 image_verify_limiter = FixedWindowRateLimiter(limit=60, window_seconds=60)
 receipt_read_limiter = FixedWindowRateLimiter(limit=120, window_seconds=60)
 receipt_verify_limiter = FixedWindowRateLimiter(limit=60, window_seconds=60)
+
+
+
+def privacy_rate_limit_identity(scope: str, principal: str, client: str | None = None) -> str:
+    """Build a bounded, non-raw rate-limit identity for layered abuse controls."""
+    if not scope or not principal:
+        raise ValueError("Rate-limit scope and principal are required")
+    material = f"{scope}|{principal}|{client or 'unknown'}".encode("utf-8")
+    return hashlib.sha256(material).hexdigest()
+
+
+agent_key_limiter = FixedWindowRateLimiter(limit=120, window_seconds=60)
