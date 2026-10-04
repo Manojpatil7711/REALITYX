@@ -54,3 +54,5 @@ def validate_signed_proof(signed: SignedVerificationProof) -> bool:
         return True
     except (ValueError, TypeError):
         return False
+    except Exception:
+        return False
