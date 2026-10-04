@@ -1,4 +1,5 @@
 """Deterministic document classification for batch routing."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -31,6 +32,11 @@ class DocumentClassification:
 _STRONG_PATTERNS = {
     DocumentKind.AADHAAR: ("aadhaar", "aadhar", "uidai", "unique identity"),
     DocumentKind.PAN: ("pan card", "pan", "income tax department", "permanent account number"),
+    DocumentKind.PASSPORT: ("passport", "passport number", "travel document", "p<"),
+    DocumentKind.VISA: ("visa", "entry permit", "residence visa", "visa number"),
+    DocumentKind.DRIVER_LICENSE: ("driver license", "driving licence", "driving license"),
+    DocumentKind.RESIDENCE_PERMIT: ("residence permit", "residency permit"),
+    DocumentKind.NATIONAL_ID: ("national id", "identity card", "national identity"),
     DocumentKind.BANK_DOCUMENT: ("bank statement", "account statement", "passbook", "ifsc"),
 }
 _WEAK_PATTERNS = {DocumentKind.BANK_DOCUMENT: ("account number",)}
