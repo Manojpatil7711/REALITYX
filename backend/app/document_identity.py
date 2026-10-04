@@ -23,6 +23,12 @@ class IdentityMatch:
     reasons: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class IdentityGroup:
+    group_id: str
+    document_ids: tuple[str, ...]
+
+
 def _norm(value: str | None) -> str | None:
     if not value:
         return None
@@ -32,11 +38,6 @@ def _norm(value: str | None) -> str | None:
 
 
 def pseudonymous_identity_key(signals: IdentitySignals, *, tenant_salt: bytes | None = None) -> str:
-    """Non-reversible grouping key; not an authenticity proof.
-
-    A tenant-specific secret salt is preferred in production so identical
-    identity data cannot be correlated across tenants.
-    """
     values = tuple(_norm(v) or "" for v in (
         signals.name, signals.date_of_birth, signals.document_number, signals.address
     ))
@@ -80,3 +81,31 @@ def match_identity(left: IdentitySignals, right: IdentitySignals) -> IdentityMat
     if strong >= 1 or weak >= 2:
         return IdentityMatch(True, "medium", tuple(reasons))
     return IdentityMatch(False, "uncertain", tuple(reasons))
+
+
+def group_document_identities(
+    documents: list[tuple[str, IdentitySignals]],
+) -> tuple[IdentityGroup, ...]:
+    """Group only when evidence supports the same person; ambiguous links stay separate."""
+    if len(documents) > 10_000:
+        raise ValueError("too many documents")
+    groups: list[list[str]] = []
+    signals_by_id = dict(documents)
+    for document_id, signals in documents:
+        placed = False
+        for group in groups:
+            candidates = [signals_by_id[item] for item in group]
+            matches = [match_identity(signals, candidate) for candidate in candidates]
+            if any(match.matched and match.confidence == "high" for match in matches):
+                group.append(document_id)
+                placed = True
+                break
+        if not placed:
+            groups.append([document_id])
+    return tuple(
+        IdentityGroup(
+            group_id=hashlib.sha256("|".join(sorted(group)).encode("utf-8")).hexdigest()[:24],
+            document_ids=tuple(group),
+        )
+        for group in groups
+    )
