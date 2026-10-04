@@ -8,12 +8,28 @@ from .contracts import Evidence, VerificationArtifact, VerificationResponse
 
 
 def canonical_json(value: Any) -> bytes:
+    """Serialize receipt data deterministically for hashing and signatures."""
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 def evidence_hash(evidence: list[Evidence]) -> str:
     payload = [item.model_dump(mode="json", exclude_none=True) for item in evidence]
     return hashlib.sha256(canonical_json(payload)).hexdigest()
+
+
+def artifact_payload(artifact: VerificationArtifact) -> bytes:
+    """Return the exact unsigned payload used by receipt digests/signatures."""
+    return canonical_json(
+        artifact.model_dump(
+            mode="json",
+            exclude={"signature", "signature_algorithm"},
+        )
+    )
+
+
+def artifact_digest(artifact: VerificationArtifact) -> str:
+    """Return a stable SHA-256 digest for the unsigned receipt payload."""
+    return hashlib.sha256(artifact_payload(artifact)).hexdigest()
 
 
 def build_artifact(response: VerificationResponse) -> VerificationArtifact:
