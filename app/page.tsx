@@ -166,6 +166,15 @@ export default function Home(){
 
   <section className="intelligence" id="intelligence"><div className="sectionHead"><div><div className="eyebrow">GLOBAL INTELLIGENCE LAYER</div><h2>One trust language for a multilingual world.</h2></div><p>REALITYX is designed for global users, provider-neutral evidence and machine-readable verification — without turning the platform into a surveillance system.</p></div><div className="intelGrid">{[["AI TOOLS","Capabilities · versions · limitations"],["IMAGE","Pixels · metadata · edits · provenance"],["VIDEO","Frames · codec · temporal consistency"],["VOICE","Spectral signals · provenance · consistency"],["DOCUMENT","Structure · metadata · signatures"],["PROFILES","Public claims · provenance · consistency"],["SOCIAL MEDIA","Public context · reposts · timestamps"],["TRUST STANDARDS","C2PA · Content Credentials · signatures"]].map(([a,b])=><div className="intelCard" key={a}><span>◆</span><b>{a}</b><p>{b}</p></div>)}</div></section>
 
+  <section className="trustPassport">
+   <div className="passportHead"><div><div className="eyebrow">TRUST PASSPORT</div><h2>Know what you can trust — before you act.</h2></div><p>A verification result is only one part of a decision. REALITYX exposes the proof boundary, key state, evidence quality and unresolved uncertainty.</p></div>
+   <div className="passportGrid">
+    <div><span>01</span><b>ARTIFACT IDENTITY</b><p>Exact media hash binds the result to the item that was analyzed.</p><strong>HASH-BOUND</strong></div>
+    <div><span>02</span><b>EVIDENCE PROVENANCE</b><p>Evidence graph and provenance state show where the conclusion came from.</p><strong>TRACEABLE</strong></div>
+    <div><span>03</span><b>KEY TRUST</b><p>Signing identity can be checked against lifecycle state and revocation.</p><strong>REVOCATION-AWARE</strong></div>
+    <div><span>04</span><b>DECISION BOUNDARY</b><p>Uncertain or conflicting evidence remains visible instead of being hidden.</p><strong>NO FORCED CERTAINTY</strong></div>
+   </div>
+  </section>
   <section className="explain" id="how"><div><div className="eyebrow">NOT A GUESS</div><h2>Evidence before certainty.</h2></div><p>REALITYX combines independent signals, provenance and forensic analysis instead of trusting a single AI model. When evidence conflicts, the system can say <strong>UNCERTAIN</strong> instead of forcing an answer.</p></section>
   <section className="layers"><div><span>01</span><b>Fast checks</b><p>Hash, metadata, provenance and integrity signals run first.</p></div><div><span>02</span><b>Evidence fusion</b><p>Independent engines are combined conservatively.</p></div><div><span>03</span><b>Deep verification</b><p>Expensive analysis is triggered only when it can improve the answer.</p></div></section>
 
