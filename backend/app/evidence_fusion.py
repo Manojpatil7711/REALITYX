@@ -31,7 +31,7 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
     if not verdict_signals:
         return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
 
-    graph = EvidenceGraph.from_evidence(signals)
+    graph = EvidenceGraph.from_evidence(verdict_signals)
     groups = graph.independent_source_groups(verdict_signals)
     independent_count = len(groups)
 
