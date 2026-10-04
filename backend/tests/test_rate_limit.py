@@ -1,4 +1,4 @@
-from app.rate_limit import FixedWindowRateLimiter
+from app.rate_limit import FixedWindowRateLimiter, privacy_rate_limit_identity
 
 
 def test_fixed_window_rejects_after_limit():
@@ -43,7 +43,6 @@ def test_fixed_window_rejects_invalid_capacity():
 
 
 def test_privacy_rate_limit_identity_is_deterministic_and_scoped():
-    from app.rate_limit import privacy_rate_limit_identity
     first = privacy_rate_limit_identity("agent-key", "key-a", "127.0.0.1")
     assert first == privacy_rate_limit_identity("agent-key", "key-a", "127.0.0.1")
     assert first != privacy_rate_limit_identity("agent-key", "key-b", "127.0.0.1")
