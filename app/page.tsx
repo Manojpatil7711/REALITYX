@@ -48,28 +48,42 @@ const trust = [
   ["Provider neutral","External engines can be added without changing the trust layer."],
 ];
 
+const accepted = ["image/jpeg","image/png","image/webp","application/pdf","video/mp4","video/quicktime","video/webm","audio/mpeg","audio/wav","audio/x-wav","audio/mp4","audio/x-m4a","application/zip"];
 type Result = { verification_id?:string; sha256?:string; result?:string; confidence?:number };
 
 export default function Home(){
   const inputRef=useRef<HTMLInputElement>(null);
+  const folderRef=useRef<HTMLInputElement>(null);
   const [lang,setLang]=useState("en");
-  const [fileName,setFileName]=useState("");
+  const [files,setFiles]=useState<File[]>([]);
   const [checking,setChecking]=useState(false);
   const [stage,setStage]=useState("");
   const [result,setResult]=useState<Result|null>(null);
   const [error,setError]=useState("");
   const t=copy[lang]||copy.en;
 
+  function addFiles(list:FileList|null){
+    if(!list?.length) return;
+    const incoming=Array.from(list);
+    const valid=incoming.filter(file=>accepted.includes(file.type)||/\.(pdf|png|jpe?g|webp|mp4|mov|webm|mp3|wav|m4a|zip)$/i.test(file.name));
+    if(!valid.length){setError("No supported evidence files were selected.");return}
+    setFiles(valid);setResult(null);setError("");
+  }
+
   function selectFile(file?:File){
-    if(!file || !["image/jpeg","image/png","image/webp"].includes(file.type)) return;
-    const dt=new DataTransfer(); dt.items.add(file);
-    if(inputRef.current) inputRef.current.files=dt.files;
-    setFileName(file.name); setResult(null); setError("");
+    if(file) addFiles(new DataTransfer().files);
+  }
+
+  function imageFile(){
+    return files.find(file=>["image/jpeg","image/png","image/webp"].includes(file.type));
   }
 
   async function verify(){
-    const file=inputRef.current?.files?.[0];
-    if(!file){inputRef.current?.click();return}
+    const file=imageFile();
+    if(!file){
+      setError("This evidence type is not connected to the live verification engine yet.");
+      return;
+    }
     setChecking(true);setStage("Preparing secure verification…");setError("");setResult(null);
     try{
       const apiBase=process.env.NEXT_PUBLIC_REALITYX_API_URL;
@@ -83,6 +97,12 @@ export default function Home(){
     }catch(err){setError(err instanceof Error?err.message:"Verification could not be completed.")}
     finally{setChecking(false);setStage("")}
   }
+
+  const imageCount=files.filter(f=>["image/jpeg","image/png","image/webp"].includes(f.type)).length;
+  const pdfCount=files.filter(f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name)).length;
+  const videoCount=files.filter(f=>f.type.startsWith("video/")).length;
+  const audioCount=files.filter(f=>f.type.startsWith("audio/")).length;
+  const zipCount=files.filter(f=>f.type==="application/zip"||/\.zip$/i.test(f.name)).length;
 
   return <main>
     <nav className="nav">
@@ -102,13 +122,21 @@ export default function Home(){
       <div className="heroTrust"><span>● Evidence-first</span><span>● Privacy-minded</span><span>● Provider-neutral</span><span>● No forced certainty</span></div>
 
       <div className="verifyCard">
-        <div className="drop" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inputRef.current?.click()}}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();selectFile(e.dataTransfer.files?.[0])}} onClick={()=>inputRef.current?.click()}>
+        <div className="drop" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inputRef.current?.click()}}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files)}} onClick={()=>inputRef.current?.click()}>
           <div className="uploadIcon">↑</div>
           <h2>{checking?(stage||"Verifying…"):"Choose evidence to verify"}</h2>
-          <p>Images now supported · PDF, video, audio, ZIP and folder workflows are added as production modules</p>
-          <input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>selectFile(e.target.files?.[0])}/>
-          {fileName&&<div className="filename">{fileName}</div>}
+          <p>Images, PDF, video, audio and ZIP accepted for intake · drag & drop supported</p>
+          <input ref={inputRef} hidden type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.mp4,.mov,.webm,.mp3,.wav,.m4a,.zip" onChange={e=>addFiles(e.target.files)}/>
+          <input ref={folderRef} hidden type="file" multiple {...({webkitdirectory:""} as React.InputHTMLAttributes<HTMLInputElement>)} onChange={e=>addFiles(e.target.files)}/>
+          {files.length>0&&<div className="filename">{files.length} evidence file{files.length===1?"":"s"} selected</div>}
         </div>
+        <div className="intakeActions">
+          <button className="secondary" type="button" onClick={()=>inputRef.current?.click()}>Choose files</button>
+          <button className="secondary" type="button" onClick={()=>folderRef.current?.click()}>Choose folder</button>
+        </div>
+        {files.length>0&&<div className="intakeSummary" aria-live="polite">
+          {imageCount>0&&<span>IMAGE {imageCount}</span>}{pdfCount>0&&<span>PDF {pdfCount}</span>}{videoCount>0&&<span>VIDEO {videoCount}</span>}{audioCount>0&&<span>AUDIO {audioCount}</span>}{zipCount>0&&<span>ZIP {zipCount}</span>}
+        </div>}
         <button className="primary" onClick={verify} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
         {error&&<div className="verifyError" role="alert">{error}</div>}
         {result&&<div className="verifyResult" aria-live="polite">
@@ -117,12 +145,12 @@ export default function Home(){
           {result.verification_id&&<small>Verification ID: {result.verification_id}</small>}
           <div className="decision"><b>{result.result==="UNCERTAIN"?"Do not force a yes/no decision.":"Use the result with source and provenance context."}</b><span>Evidence reviewed · confidence shown · uncertainty preserved</span></div>
         </div>}
-        {!result&&!error&&<div className="privacy">Fast path · evidence first · uncertainty reported</div>}
+        {!result&&!error&&<div className="privacy">Fast intake · evidence first · no silent certainty</div>}
       </div>
     </section>
 
     <section className="mediaStrip" id="verify-types" aria-label="Verification types">
-      {media.map(([name,desc,status])=><button className="mediaCard" key={name} type="button" disabled={status!=="available"} aria-label={status==="available"?`Verify ${name}`:`${name} verification planned`} onClick={()=>{if(status==="available"){document.getElementById("verify")?.scrollIntoView({behavior:"smooth"});inputRef.current?.click()}}}>
+      {media.map(([name,desc,status])=><button className="mediaCard" key={name} type="button" disabled={status!=="available"} aria-label={status==="available"?`Verify ${name}`:`${name} verification planned`} onClick={()=>{if(status==="available")inputRef.current?.click()}}>
         <span className="mediaIcon">{name==="IMAGE"?"◈":name==="VIDEO"?"▶":name==="AUDIO"?"◉":name==="DOCUMENT"?"▤":"⌁"}</span>
         <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaStatus">{status==="available"?"AVAILABLE":"PLANNED"}</span><span className="mediaArrow">→</span>
       </button>)}
