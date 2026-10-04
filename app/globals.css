@@ -37,3 +37,18 @@ body{background:radial-gradient(circle at 50% -20%,#102018 0,#070a0d 34%,#050708
 .decisionGrid p{color:#718087;font-size:11px;line-height:1.6;margin:0}
 @media(max-width:900px){.decisionGrid{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.decisionGuide{padding-left:15px;padding-right:15px}.decisionGrid{grid-template-columns:1fr}.decisionNext{display:block}.decisionNext span{display:block;text-align:left;margin-top:5px}}
+
+
+/* Trust Passport */
+.trustPassport{max-width:1240px;margin:auto;padding:0 24px 105px}
+.passportHead{border-top:1px solid #182027;padding-top:70px;display:grid;grid-template-columns:1.1fr .9fr;gap:70px;align-items:end}
+.passportHead h2{font-size:clamp(36px,4.8vw,60px);line-height:1;letter-spacing:-.05em;margin:14px 0}
+.passportHead p{color:#89969e;line-height:1.7;font-size:14px;margin:0}
+.passportGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:35px}
+.passportGrid>div{border:1px solid #1d292f;border-radius:14px;background:#080d0f;padding:20px;min-height:175px}
+.passportGrid span{color:var(--accent);font-size:10px;letter-spacing:.12em}
+.passportGrid b{display:block;margin:24px 0 9px;font-size:12px}
+.passportGrid p{color:#718087;font-size:11px;line-height:1.6;margin:0 0 14px}
+.passportGrid strong{font-size:8px;letter-spacing:.12em;color:#8fbd9d;border:1px solid #294332;border-radius:999px;padding:5px 7px}
+@media(max-width:900px){.passportHead{grid-template-columns:1fr;gap:20px}.passportGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.trustPassport{padding-left:15px;padding-right:15px}.passportGrid{grid-template-columns:1fr}}
