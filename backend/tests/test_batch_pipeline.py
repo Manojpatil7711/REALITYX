@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import pytest
+
+from app.batch_pipeline import (
+    PipelineDocument,
+    build_batch_pipeline_report,
+)
+from app.document_identity import IdentitySignals
+
+
+@dataclass
+class StubOCR:
+    text_by_media_type: dict[str, str]
+
+    def extract_text(self, *, data: bytes, media_type: str) -> str:
+        return self.text_by_media_type.get(media_type, "")
+
+
+def test_groups_aadhaar_and_pan_into_separate_report_slots() -> None:
+    ocr = StubOCR({"application/pdf": "Aadhaar Unique Identity"})
+    documents = [
+        PipelineDocument(
+            document_id="aadhaar-1",
+            filename="aadhaar.pdf",
+            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            media_type="application/pdf",
+            identity=IdentitySignals(name="Ravi Patil", date_of_birth="1990-01-01"),
+        ),
+        PipelineDocument(
+            document_id="pan-1",
+            filename="pan.pdf",
+            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            media_type="application/pdf",
+            identity=IdentitySignals(name="Ravi Patil", date_of_birth="1990-01-01"),
+        ),
+    ]
+
+    report = build_batch_pipeline_report(documents, ocr=ocr)
+
+    assert report.document_count == 2
+    assert len(report.customers) == 1
+    customer = report.customers[0]
+    assert customer.aadhaar is not None
+    assert customer.pan is not None
+    assert customer.aadhaar.document.kind.value == "aadhaar"
+    assert customer.pan.document.kind.value == "aadhaar"  # OCR is deliberately provider output, not filename truth
+
+
+def test_conflicting_dob_keeps_documents_separate() -> None:
+    ocr = StubOCR({"application/pdf": "Aadhaar Unique Identity"})
+    documents = [
+        PipelineDocument(
+            document_id="a",
+            filename="aadhaar.pdf",
+            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            media_type="application/pdf",
+            identity=IdentitySignals(name="Ravi Patil", date_of_birth="1990-01-01"),
+        ),
+        PipelineDocument(
+            document_id="b",
+            filename="pan.pdf",
+            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            media_type="application/pdf",
+            identity=IdentitySignals(name="Ravi Patil", date_of_birth="1991-01-01"),
+        ),
+    ]
+
+    report = build_batch_pipeline_report(documents, ocr=ocr)
+    assert len(report.customers) == 2
