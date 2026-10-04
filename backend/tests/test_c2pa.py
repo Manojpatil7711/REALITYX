@@ -1,8 +1,14 @@
+import base64
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from realityx.c2pa import (
     ContentCredential,
     CredentialStatus,
     credential_digest,
+    credential_signing_payload,
     validate_content_credential,
+    verify_credential_signature,
 )
 
 
@@ -20,6 +26,14 @@ def credential(**overrides):
     }
     data.update(overrides)
     return ContentCredential(**data)
+
+
+def signed_credential(private_key):
+    unsigned = credential()
+    signature = private_key.sign(credential_signing_payload(unsigned))
+    return unsigned.model_copy(
+        update={"signature": base64.b64encode(signature).decode("ascii")}
+    )
 
 
 def test_artifact_binding_fails_closed():
@@ -56,3 +70,26 @@ def test_credential_digest_is_deterministic_and_claim_bound():
     changed = credential_digest(credential(claim="Different claim"))
     assert first == second
     assert first != changed
+
+
+def test_ed25519_signature_verifies():
+    private_key = Ed25519PrivateKey.generate()
+    signed = signed_credential(private_key)
+    public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode("ascii")
+    assert verify_credential_signature(signed, public_key_b64=public_key) is True
+
+
+def test_tampered_claim_fails_signature():
+    private_key = Ed25519PrivateKey.generate()
+    signed = signed_credential(private_key)
+    tampered = signed.model_copy(update={"claim": "Tampered"})
+    public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode("ascii")
+    assert verify_credential_signature(tampered, public_key_b64=public_key) is False
+
+
+def test_unsupported_algorithm_fails_closed():
+    private_key = Ed25519PrivateKey.generate()
+    signed = signed_credential(private_key)
+    unsupported = signed.model_copy(update={"signature_algorithm": "rsa"})
+    public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode("ascii")
+    assert verify_credential_signature(unsupported, public_key_b64=public_key) is False
