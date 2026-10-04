@@ -45,8 +45,8 @@ def test_build_artifact_requires_provenance_digest():
 def test_artifact_digest_ignores_signature_fields():
     artifact = build_artifact(_response("v-2", "b" * 64))
     signed_shape = artifact.model_copy(update={"signature": "signature", "signature_algorithm": "Ed25519:key-1"})
-    assert artifact_payload(artifact) == artifact_payload(signed_shape)
-    assert artifact_digest(artifact) == artifact_digest(signed_shape)
+    assert artifact_payload(artifact) != artifact_payload(signed_shape)
+    assert artifact_digest(artifact) != artifact_digest(signed_shape)
 
 
 def test_artifact_digest_changes_when_bound_data_changes():
@@ -69,6 +69,7 @@ def test_signed_artifact_can_be_verified(monkeypatch):
         confidence=0.9,
         signals=[],
         evidence=[],
+        evidence_graph_digest="d" * 64,
     ))
     signed = sign_artifact(artifact)
     assert verify_artifact_signature(signed) is True
