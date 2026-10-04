@@ -4,7 +4,7 @@ import base64
 import hashlib
 import os
 
-from .attestation import canonical_json
+from .attestation import artifact_digest, artifact_payload
 from .contracts import VerificationArtifact
 from .key_registry import registry
 
@@ -15,11 +15,7 @@ PRIVATE_KEY_ENV = "REALITYX_SIGNING_PRIVATE_KEY_B64"
 
 
 def _payload(artifact: VerificationArtifact) -> bytes:
-    return canonical_json(artifact.model_dump(mode="json", exclude={"signature", "signature_algorithm"}))
-
-
-def artifact_digest(artifact: VerificationArtifact) -> str:
-    return hashlib.sha256(_payload(artifact)).hexdigest()
+    return artifact_payload(artifact)
 
 
 def sign_artifact(artifact: VerificationArtifact) -> VerificationArtifact:
