@@ -26,7 +26,7 @@ def artifact_payload(artifact: VerificationArtifact) -> bytes:
     return canonical_json(
         artifact.model_dump(
             mode="json",
-            exclude={"signature", "signature_algorithm"},
+            exclude={"signature"},
         )
     )
 
