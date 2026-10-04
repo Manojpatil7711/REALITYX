@@ -1,8 +1,4 @@
-"""Enterprise batch-document verification contracts and bounded job reference implementation.
-
-Classification is routing only. Authenticity and authority require evidence and
-must remain provider-neutral.
-"""
+"""Enterprise batch-document verification contracts and bounded job reference implementation."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -62,17 +58,21 @@ class BatchCustomer:
 @dataclass
 class BatchJob:
     job_id: str
+    owner_key_id: str
     status: BatchJobStatus
     document_count: int
     created_at: datetime
     customers: dict[str, BatchCustomer] = field(default_factory=dict)
 
 
-def new_batch_job(document_count: int) -> BatchJob:
+def new_batch_job(document_count: int, *, owner_key_id: str) -> BatchJob:
     if document_count < 1:
         raise ValueError("document_count must be positive")
+    if not owner_key_id.strip():
+        raise ValueError("owner_key_id must not be empty")
     return BatchJob(
         job_id=str(uuid.uuid4()),
+        owner_key_id=owner_key_id,
         status=BatchJobStatus.ACCEPTED,
         document_count=document_count,
         created_at=datetime.now(timezone.utc),
