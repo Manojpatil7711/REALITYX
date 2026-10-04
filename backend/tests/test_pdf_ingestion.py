@@ -1,38 +1,34 @@
-from app.pdf_ingestion import new_page_artifact, page_sha256
+from io import BytesIO
+
+import pytest
+from pypdf import PdfWriter
+
+from app.pdf_ingestion import MAX_PDF_PAGES, separate_pdf_pages
 
 
-def test_page_hash_is_deterministic():
-    assert page_sha256(b"page-1") == page_sha256(b"page-1")
+def make_pdf(page_count: int) -> bytes:
+    writer = PdfWriter()
+    for _ in range(page_count):
+        writer.add_blank_page(width=200, height=200)
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
 
 
-def test_page_artifact_binds_source_and_page():
-    result = new_page_artifact(
+def test_separate_pdf_pages_returns_independent_page_artifacts():
+    result = separate_pdf_pages(
         source_document_id="doc-001",
-        page_number=2,
-        page_bytes=b"page-2",
+        pdf_bytes=make_pdf(3),
     )
-    assert result.source_document_id == "doc-001"
-    assert result.page_number == 2
-    assert len(result.page_sha256) == 64
+    assert len(result) == 3
+    assert [item.page_number for item in result] == [1, 2, 3]
+    assert all(len(item.page_sha256) == 64 for item in result)
+    assert len({item.page_sha256 for item in result}) == 3
 
 
-def test_empty_page_is_rejected():
-    try:
-        page_sha256(b"")
-    except ValueError as exc:
-        assert "empty" in str(exc)
-    else:
-        raise AssertionError("expected empty page rejection")
-
-
-def test_invalid_page_number_is_rejected():
-    try:
-        new_page_artifact(
+def test_pdf_page_limit_is_enforced():
+    with pytest.raises(ValueError, match="maximum page count"):
+        separate_pdf_pages(
             source_document_id="doc-001",
-            page_number=0,
-            page_bytes=b"page",
+            pdf_bytes=make_pdf(MAX_PDF_PAGES + 1),
         )
-    except ValueError as exc:
-        assert "page_number" in str(exc)
-    else:
-        raise AssertionError("expected page number rejection")
