@@ -72,3 +72,8 @@ class VerificationResponse(BaseModel):
     confidence: float
     signals: list[Evidence]
     evidence: list[Evidence]
+    risk_domain: str
+    risk_level: str
+    risk_action: str
+    risk_confidence: float
+    risk_reasons: list[str]
