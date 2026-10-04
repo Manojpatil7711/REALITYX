@@ -3,10 +3,10 @@ import base64
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from app.attestation import canonical_json
+from app.attestation import artifact_digest, canonical_json
 from app.contracts import VerificationArtifact, VerificationResult
 from app.key_registry import PublicKeyRecord, registry
-from app.signing import artifact_digest, sign_artifact
+from app.signing import sign_artifact
 
 
 def artifact():
