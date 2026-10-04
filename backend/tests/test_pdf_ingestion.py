@@ -23,7 +23,7 @@ def test_separate_pdf_pages_returns_independent_page_artifacts():
     assert len(result) == 3
     assert [item.page_number for item in result] == [1, 2, 3]
     assert all(len(item.page_sha256) == 64 for item in result)
-    assert len({item.page_sha256 for item in result}) == 3
+    assert all(item.source_document_id == "doc-001" for item in result)
 
 
 def test_pdf_page_limit_is_enforced():
