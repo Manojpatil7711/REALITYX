@@ -60,7 +60,13 @@ def build_professional_report(response: VerificationResponse) -> ProfessionalVer
         "A verification result is not government, legal, regulatory, or accreditation certification.",
     ]
     if response.result is VerificationResult.UNCERTAIN:
-        limitations.append("Additional independent evidence may change the result.")
+        limitations.append(
+            "Evidence is insufficient to establish authenticity or inauthenticity with the required confidence."
+        )
+        if response.conflict:
+            limitations.append("Evidence sources materially conflict and require further investigation.")
+        else:
+            limitations.append("Additional independent evidence may change the result.")
     if not response.independent_source_count:
         limitations.append("No independent verdict source was available.")
     return ProfessionalVerificationReport(
