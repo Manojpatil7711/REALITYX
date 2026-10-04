@@ -1,11 +1,13 @@
 """Provider-neutral Content Credentials / C2PA trust boundary.
 
 Credentials are provenance evidence. A valid credential never becomes an
-authenticity verdict by itself; artifact binding and trust state remain explicit.
+authenticity verdict by itself; artifact binding, signature validity, and
+issuer trust remain explicit.
 """
 
 from __future__ import annotations
 
+import base64
 from enum import StrEnum
 from hashlib import sha256
 
@@ -43,12 +45,41 @@ def credential_digest(credential: ContentCredential) -> str:
     return sha256(canonical_json(credential.model_dump(mode="json")).encode("utf-8")).hexdigest()
 
 
+def credential_signing_payload(credential: ContentCredential) -> bytes:
+    """Canonical bytes covered by the credential signature."""
+    data = credential.model_dump(mode="json")
+    data.pop("signature")
+    return canonical_json(data).encode("utf-8")
+
+
+def verify_credential_signature(
+    credential: ContentCredential,
+    *,
+    public_key_b64: str,
+) -> bool:
+    """Verify the supported credential signature without assigning issuer trust."""
+    if credential.signature_algorithm != "ed25519":
+        return False
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+        public_key = base64.b64decode(public_key_b64, validate=True)
+        signature = base64.b64decode(credential.signature, validate=True)
+        Ed25519PublicKey.from_public_bytes(public_key).verify(
+            signature, credential_signing_payload(credential)
+        )
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
 def validate_content_credential(
     credential: ContentCredential | None,
     *,
     artifact_sha256: str,
     trusted_issuer: bool = False,
     conflicting: bool = False,
+    signature_valid: bool | None = None,
 ) -> CredentialStatus:
     if credential is None:
         return CredentialStatus.ABSENT
@@ -56,6 +87,8 @@ def validate_content_credential(
         return CredentialStatus.INVALID
     if conflicting:
         return CredentialStatus.CONFLICTING
+    if signature_valid is False:
+        return CredentialStatus.INVALID
     if not trusted_issuer:
         return CredentialStatus.VALID
     return CredentialStatus.TRUSTED
