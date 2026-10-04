@@ -11,7 +11,7 @@ from .api_keys import registry as api_key_registry
 from .attestation import artifact_digest, verify_artifact_signature
 from .key_registry import registry as key_registry
 from .receipt_store import store as receipt_store
-from .rate_limit import receipt_read_limiter
+from .rate_limit import agent_key_limiter, privacy_rate_limit_identity, receipt_read_limiter
 
 router = APIRouter(prefix="/agent")
 
@@ -49,7 +49,16 @@ def get_agent_trust(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="verification_id must be a UUID") from exc
 
-    identity = request.client.host if request.client else "unknown"
+    client = request.client.host if request.client else None
+    key_identity = privacy_rate_limit_identity("agent-key", _api_key.key_id)
+    key_decision = agent_key_limiter.check(key_identity)
+    if not key_decision.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="API key rate limit exceeded",
+            headers={"Retry-After": str(key_decision.retry_after_seconds)},
+        )
+    identity = privacy_rate_limit_identity("agent-client", _api_key.key_id, client)
     decision = receipt_read_limiter.check(identity)
     if not decision.allowed:
         raise HTTPException(
