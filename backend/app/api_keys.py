@@ -39,14 +39,15 @@ class ApiKeyRegistry:
         self._records: dict[str, ApiKeyRecord] = {}
 
     def issue(self, scopes: set[str], expires_at: datetime | None = None) -> tuple[str, ApiKeyRecord]:
-        if not scopes:
+        normalized_scopes = validate_public_scopes(list(scopes))
+        if not normalized_scopes:
             raise ValueError("At least one API scope is required")
         if expires_at is not None and expires_at <= _utc_now():
             raise ValueError("API key expiry must be in the future")
         key_id = secrets.token_urlsafe(18)
         secret = secrets.token_urlsafe(KEY_BYTES)
         token = f"{KEY_PREFIX}{key_id}.{secret}"
-        record = ApiKeyRecord(key_id, _digest(secret), frozenset(scopes), _utc_now(), expires_at)
+            record = ApiKeyRecord(key_id, _digest(secret), frozenset(normalized_scopes), _utc_now(), expires_at)
         self._records[key_id] = record
         return token, record
 
