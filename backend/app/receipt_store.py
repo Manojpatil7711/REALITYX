@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 from threading import Lock
+from typing import Protocol
 
 from .contracts import VerificationArtifact
 
 
-class ReceiptStore:
-    """Bounded process-local receipt registry.
+class ReceiptRepository(Protocol):
+    """Storage contract shared by cache and future durable backends."""
 
-    This is intentionally an in-memory cache, not durable production storage.
-    A durable implementation must preserve receipt lookup across restarts and
-    across multiple application instances.
+    def put(self, artifact: VerificationArtifact) -> None: ...
+
+    def get(self, verification_id: str) -> VerificationArtifact | None: ...
+
+
+class ReceiptStore:
+    """Bounded process-local receipt cache implementing ReceiptRepository.
+
+    This remains the development/default store. Production deployments should
+    inject a durable repository that preserves receipts across restarts and
+    application instances without changing the receipt API contract.
     """
 
     def __init__(self, max_items: int = 10000) -> None:
@@ -33,4 +42,4 @@ class ReceiptStore:
             return artifact.model_copy(deep=True) if artifact is not None else None
 
 
-store = ReceiptStore()
+store: ReceiptRepository = ReceiptStore()
