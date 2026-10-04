@@ -32,6 +32,8 @@ class ProviderKey:
     expires_at: str | None = None
     rotated_at: str | None = None
     revoked_at: str | None = None
+    # Public verification material only; private keys are never stored here.
+    public_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -79,6 +81,7 @@ class TrustRegistry:
                     "expires_at": record.key.expires_at,
                     "rotated_at": record.key.rotated_at,
                     "revoked_at": record.key.revoked_at,
+                    "public_key": record.key.public_key,
                 },
                 "registry_version": record.registry_version,
             }
@@ -125,6 +128,9 @@ def register_key(
         KeyStatus.ACTIVE,
         created_at,
         expires_at,
+        None,
+        None,
+        public_key,
     )
     return TrustRecord(provider, key)
 
