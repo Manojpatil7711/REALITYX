@@ -49,6 +49,9 @@ class VerificationArtifact(BaseModel):
 
 class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    evidence_id: str = Field(default="")
+    source_group: str = Field(default="")
+    parent_evidence_ids: list[str] = Field(default_factory=list)
     signal: str
     status: SignalStatus
     kind: EvidenceKind = EvidenceKind.FACT

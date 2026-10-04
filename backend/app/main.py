@@ -4,6 +4,7 @@ from .owner_routes import router as owner_router
 from .routes import router
 from .key_routes import router as key_router
 from .receipt_routes import router as receipt_router
+from .operations import router as operations_router
 from .key_registry import load_env_key
 
 configure_logging()
@@ -20,6 +21,7 @@ app.include_router(router, prefix="/v1")
 app.include_router(owner_router, prefix="/v1")
 app.include_router(key_router, prefix="/v1")
 app.include_router(receipt_router, prefix="/v1")
+app.include_router(operations_router, prefix="/v1")
 
 
 @app.get("/health")
