@@ -31,20 +31,12 @@ class VerificationResult(StrEnum):
     UNCERTAIN = "uncertain"
 
 
-class VerificationArtifact(BaseModel):
-    """Portable, signed-verification-ready receipt; not a legal certification."""
-    model_config = ConfigDict(extra="forbid")
-    artifact_version: str = "1.0"
-    protocol_version: str = PROTOCOL_VERSION
-    verification_id: str
-    media_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    result: VerificationResult
-    confidence: float = Field(ge=0.0, le=1.0)
-    engine_version: str = ENGINE_VERSION
-    evidence_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
-    issuer: str = "REALITYX"
-    signature_algorithm: str | None = None
-    signature: str | None = None
+class EvidenceStrength(StrEnum):
+    STRONG = "strong"
+    MEDIUM = "medium"
+    WEAK = "weak"
+    INSUFFICIENT = "insufficient"
+    CONFLICTING = "conflicting"
 
 
 class Evidence(BaseModel):
@@ -60,6 +52,22 @@ class Evidence(BaseModel):
     verdict: SignalVerdict | None = None
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     latency_ms: float | None = Field(default=None, ge=0.0)
+
+
+class VerificationArtifact(BaseModel):
+    """Portable, signed-verification-ready receipt; not a legal certification."""
+    model_config = ConfigDict(extra="forbid")
+    artifact_version: str = "1.0"
+    protocol_version: str = PROTOCOL_VERSION
+    verification_id: str
+    media_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    result: VerificationResult
+    confidence: float = Field(ge=0.0, le=1.0)
+    engine_version: str = ENGINE_VERSION
+    evidence_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    issuer: str = "REALITYX"
+    signature_algorithm: str | None = None
+    signature: str | None = None
 
 
 class VerificationResponse(BaseModel):
@@ -82,3 +90,35 @@ class VerificationResponse(BaseModel):
     independent_source_count: int = 0
     conflict: bool = False
     evidence_graph_digest: str = Field(default="", pattern=r"^(|[0-9a-f]{64})$")
+
+
+class ProfessionalEvidenceItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    evidence_id: str
+    signal: str
+    status: str
+    summary: str
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    engine_version: str | None = None
+    location: str | None = None
+
+
+class ProfessionalVerificationReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    report_version: str = "1.0"
+    verification_id: str
+    artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    verdict: VerificationResult
+    conclusion: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence_strength: EvidenceStrength
+    evidence: list[ProfessionalEvidenceItem]
+    independent_source_count: int
+    conflict: bool
+    provenance_status: str
+    protocol_version: str
+    engine_version: str
+    policy_version: str
+    evidence_graph_digest: str = Field(default="", pattern=r"^(|[0-9a-f]{64})$")
+    limitations: list[str] = Field(default_factory=list)
+    receipt_status: str = "available"
