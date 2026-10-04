@@ -89,11 +89,11 @@ def test_rate_limiter_requires_identity():
 
 def test_webp_riff_without_webp_signature_is_rejected():
     with pytest.raises(ValueError, match="signature"):
-        security.inspect_image(b"RIFF" + b"\\x00" * 32)
+        security.inspect_image(b"RIFF" + b"\x00" * 32)
 
 
 def test_webp_magic_requires_container_marker():
-    assert security._magic_type(b"RIFF" + b"\\x00" * 4 + b"WEBP") == "webp"
+    assert security._magic_type(b"RIFF" + b"\x00" * 4 + b"WEBP") == "webp"
 
 
 def test_oversized_pixel_limit_is_independent_of_upload_size(monkeypatch):
