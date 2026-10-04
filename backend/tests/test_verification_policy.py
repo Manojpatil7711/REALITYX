@@ -82,3 +82,21 @@ def test_originality_states_never_depend_on_similarity():
     assert determine_originality(
         authoritative_status=AuthorityStatus.VERIFIED, duplicate=True
     ) is OriginalityResult.DUPLICATE
+
+
+def test_malformed_provenance_fails_closed():
+    evidence = [
+        ev("a", "source-a", "authenticity", parents=["missing-parent"],
+           verdict=SignalVerdict.AUTHENTIC, confidence=0.99),
+    ]
+    result = evaluate_verification(
+        evidence,
+        domain=RiskDomain.MEDIA,
+        fusion_result=VerificationResult.VERIFIED,
+        fusion_confidence=0.99,
+    )
+    assert result.result is VerificationResult.UNCERTAIN
+    assert result.confidence == 0.0
+    assert result.independent_source_count == 0
+    assert result.evidence_graph_digest == ""
+    assert result.risk.action is RecommendedAction.REVERIFY
