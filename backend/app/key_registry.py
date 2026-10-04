@@ -28,10 +28,18 @@ class KeyRegistry:
             raise ValueError("Unsupported signing algorithm")
         if record.status not in {"active", "retired", "revoked"}:
             raise ValueError("Invalid key status")
+        if not record.key_id or ":" in record.key_id:
+            raise ValueError("Invalid key id")
         if record.status == "active":
             for existing in self._keys.values():
                 if existing.algorithm == record.algorithm and existing.status == "active" and existing.key_id != record.key_id:
                     raise ValueError("Only one active Ed25519 key is allowed")
+        try:
+            raw = base64.b64decode(record.public_key, validate=True)
+        except (ValueError, TypeError) as exc:
+            raise ValueError("Invalid Ed25519 public key encoding") from exc
+        if len(raw) != 32:
+            raise ValueError("Ed25519 public key must be 32 bytes")
         self._keys[record.key_id] = record
 
     def get(self, key_id: str) -> PublicKeyRecord | None:
@@ -48,7 +56,7 @@ class KeyRegistry:
     def public_document(self) -> dict:
         return {
             "issuer": "REALITYX",
-            "keys": [record.__dict__ for record in self._keys.values()],
+            "keys": [record.__dict__ for record in self._keys.values() if record.status == "active"],
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
