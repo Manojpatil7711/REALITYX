@@ -41,7 +41,7 @@ def test_groups_aadhaar_and_pan_into_separate_report_slots() -> None:
         PipelineDocument(
             document_id="pan-1",
             filename="pan.pdf",
-            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            data=_pdf_bytes(),
             media_type="application/pdf",
             identity=IdentitySignals(name="Ravi Patil", date_of_birth="1990-01-01"),
         ),
@@ -66,14 +66,14 @@ def test_conflicting_dob_keeps_documents_separate() -> None:
         PipelineDocument(
             document_id="a",
             filename="aadhaar.pdf",
-            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            data=_pdf_bytes(),
             media_type="application/pdf",
             identity=IdentitySignals(name="Ravi Patil", date_of_birth="1990-01-01"),
         ),
         PipelineDocument(
             document_id="b",
             filename="pan.pdf",
-            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            data=_pdf_bytes(),
             media_type="application/pdf",
             identity=IdentitySignals(name="Ravi Patil", date_of_birth="1991-01-01"),
         ),
