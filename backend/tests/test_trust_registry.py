@@ -1,15 +1,27 @@
+from datetime import datetime, timezone
+
 from app.ai_attestation import AIProvider, ProviderTrust
-from app.trust_registry import KeyStatus, TrustRecord, fingerprint_public_key, key_usable, register_key
+from app.trust_registry import (
+    KeyStatus,
+    TrustRecord,
+    TrustRegistry,
+    fingerprint_public_key,
+    key_usable,
+    register_key,
+)
+
 
 def test_key_fingerprint_is_deterministic():
     assert fingerprint_public_key("PUBLIC-KEY") == fingerprint_public_key("PUBLIC-KEY")
 
+
 def test_register_key_creates_trust_record():
     provider = AIProvider("provider-a", "2.0", ProviderTrust.REGISTERED)
-    record = register_key(provider, "key-1", "PUBLIC-KEY")
+    record = register_key(provider, "key-1", "PUBLIC-KEY", created_at="2026-01-01T00:00:00Z")
     assert isinstance(record, TrustRecord)
     assert record.key.status is KeyStatus.ACTIVE
     assert key_usable(record)
+
 
 def test_revoked_provider_cannot_register():
     provider = AIProvider("provider-a", "2.0", ProviderTrust.REVOKED)
@@ -18,6 +30,7 @@ def test_revoked_provider_cannot_register():
     except ValueError:
         return
     assert False
+
 
 def test_rotated_or_revoked_key_is_not_usable():
     provider = AIProvider("provider-a", "2.0", ProviderTrust.ATTESTED)
@@ -30,3 +43,43 @@ def test_rotated_or_revoked_key_is_not_usable():
         record.key.public_key_fingerprint, KeyStatus.REVOKED))
     assert not key_usable(rotated)
     assert not key_usable(revoked)
+
+
+def test_expired_key_is_not_usable():
+    record = register_key(
+        AIProvider("provider-a", "2.0", ProviderTrust.ATTESTED),
+        "key-expiring",
+        "PUBLIC-KEY",
+        expires_at="2026-01-01T00:00:00Z",
+    )
+    now = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    assert not key_usable(record, now=now)
+
+
+def test_registry_digest_is_deterministic_and_order_independent():
+    provider = AIProvider("provider-a", "2.0", ProviderTrust.ATTESTED)
+    a = register_key(provider, "key-a", "PUBLIC-A", created_at="2026-01-01T00:00:00Z")
+    b = register_key(provider, "key-b", "PUBLIC-B", created_at="2026-01-02T00:00:00Z")
+    first = TrustRegistry()
+    first.register(a)
+    first.register(b)
+    second = TrustRegistry()
+    second.register(b)
+    second.register(a)
+    assert first.digest() == second.digest()
+
+
+def test_registry_rejects_conflicting_key_id():
+    registry = TrustRegistry()
+    registry.register(register_key(
+        AIProvider("provider-a", "1.0", ProviderTrust.REGISTERED),
+        "same-key", "PUBLIC-A",
+    ))
+    try:
+        registry.register(register_key(
+            AIProvider("provider-b", "1.0", ProviderTrust.REGISTERED),
+            "same-key", "PUBLIC-B",
+        ))
+    except ValueError:
+        return
+    assert False
