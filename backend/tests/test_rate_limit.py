@@ -40,3 +40,18 @@ def test_fixed_window_rejects_invalid_capacity():
     import pytest
     with pytest.raises(ValueError):
         FixedWindowRateLimiter(limit=1, window_seconds=60, max_identities=0)
+
+
+def test_privacy_rate_limit_identity_is_deterministic_and_scoped():
+    from app.rate_limit import privacy_rate_limit_identity
+    first = privacy_rate_limit_identity("agent-key", "key-a", "127.0.0.1")
+    assert first == privacy_rate_limit_identity("agent-key", "key-a", "127.0.0.1")
+    assert first != privacy_rate_limit_identity("agent-key", "key-b", "127.0.0.1")
+    assert first != privacy_rate_limit_identity("receipt", "key-a", "127.0.0.1")
+    assert len(first) == 64
+
+
+def test_privacy_rate_limit_identity_fails_closed_on_missing_principal():
+    import pytest
+    with pytest.raises(ValueError):
+        privacy_rate_limit_identity("agent-key", "")
