@@ -14,9 +14,10 @@ class RateLimitDecision:
 class FixedWindowRateLimiter:
     """Deterministic rate-limit primitive with a replaceable state backend."""
 
-    def __init__(self, limit: int, window_seconds: int) -> None:
-        if limit <= 0 or window_seconds <= 0:
+    def __init__(self, limit: int, window_seconds: int, max_identities: int = 10000) -> None:
+        if limit <= 0 or window_seconds <= 0 or max_identities <= 0:
             raise ValueError("Rate-limit values must be positive")
+        self.max_identities = max_identities
         self.limit = limit
         self.window_seconds = window_seconds
         self._windows: dict[str, tuple[int, float]] = {}
@@ -27,6 +28,12 @@ class FixedWindowRateLimiter:
             raise ValueError("Rate-limit identity is required")
         current = monotonic() if now is None else now
         with self._lock:
+            expired = [key for key, (_, started) in self._windows.items() if current - started >= self.window_seconds]
+            for key in expired:
+                del self._windows[key]
+            if len(self._windows) >= self.max_identities and identity not in self._windows:
+                oldest = min(self._windows, key=lambda key: self._windows[key][1])
+                del self._windows[oldest]
             count, started = self._windows.get(identity, (0, current))
             if current - started >= self.window_seconds:
                 count, started = 0, current
