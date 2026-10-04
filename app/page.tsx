@@ -49,7 +49,12 @@ const trust = [
 ];
 
 const accepted = ["image/jpeg","image/png","image/webp","application/pdf","video/mp4","video/quicktime","video/webm","audio/mpeg","audio/wav","audio/x-wav","audio/mp4","audio/x-m4a","application/zip"];
-type Result = { verification_id?:string; sha256?:string; result?:string; confidence?:number };
+type Result = {
+  verification_id?:string; sha256?:string; result?:string; confidence?:number;
+  document_type?:string; authority_status?:string; risk_level?:string;
+  evidence_graph_digest?:string; receipt_digest?:string; cryptographic_valid?:boolean;
+  independent_source_count?:number; conflict?:boolean; copy_status?:string;
+};
 
 export default function Home(){
   const inputRef=useRef<HTMLInputElement>(null);
@@ -142,12 +147,35 @@ export default function Home(){
         </div>}
         <button className="primary" onClick={verify} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
         {error&&<div className="verifyError" role="alert">{error}</div>}
-        {result&&<div className="verifyResult" aria-live="polite">
-          <div className="resultTop"><span className="statusDot"/><b>{result.result??"UNCERTAIN"}</b>{typeof result.confidence==="number"&&<span>{Math.round(result.confidence*100)}% confidence</span>}</div>
-          {result.sha256&&<code>{result.sha256}</code>}
-          {result.verification_id&&<small>Verification ID: {result.verification_id}</small>}
-          <div className="decision"><b>{result.result==="UNCERTAIN"?"Do not force a yes/no decision.":"Use the result with source and provenance context."}</b><span>Evidence reviewed · confidence shown · uncertainty preserved</span></div>
-        </div>}
+        {result&&(()=>{
+          const verdict=(result.result??"UNCERTAIN").toUpperCase();
+          const tone=verdict==="VERIFIED"||verdict==="AUTHENTIC"?"verified":verdict==="INAUTHENTIC"||verdict==="MANIPULATED"||verdict==="AI_GENERATED"?"inauthentic":"uncertain";
+          const label=tone==="verified"?"Verified":tone==="inauthentic"?"Inauthentic":"Uncertain";
+          return <div className={`verifyResult trustResult ${tone}`} aria-live="polite">
+            <div className="trustResultHeader">
+              <div className="trustVerdict"><span className="statusDot"/><b>{label}</b></div>
+              {typeof result.confidence==="number"&&<div className="confidence"><strong>{Math.round(result.confidence*100)}%</strong><span>confidence</span></div>}
+            </div>
+            <p className="trustSummary">{tone==="verified"?"Available evidence supports this result.":tone==="inauthentic"?"Available evidence indicates authenticity concerns.":"Evidence is not strong enough for a reliable yes/no decision."}</p>
+            <div className="resultGrid">
+              {result.document_type&&<div><small>Document type</small><b>{result.document_type}</b></div>}
+              {result.copy_status&&<div><small>Copy / Xerox</small><b>{result.copy_status.replaceAll("_"," ")}</b></div>}
+              {result.authority_status&&<div><small>Authority check</small><b>{result.authority_status.replaceAll("_"," ")}</b></div>}
+              {result.risk_level&&<div><small>Risk level</small><b>{result.risk_level}</b></div>}
+              {typeof result.independent_source_count==="number"&&<div><small>Independent sources</small><b>{result.independent_source_count}</b></div>}
+              <div><small>Conflict</small><b>{result.conflict?"Detected":"None detected"}</b></div>
+            </div>
+            <div className="evidenceNote"><span>✓</span><div><b>Evidence reviewed</b><small>Confidence is shown transparently. Uncertainty is never hidden.</small></div></div>
+            <div className="receipt">
+              <div className="receiptTitle"><span>REALITYX TRUST RECEIPT</span>{result.cryptographic_valid&&<b>✓ Cryptographically valid</b>}</div>
+              {result.verification_id&&<div><small>Verification ID</small><code>{result.verification_id}</code></div>}
+              {result.sha256&&<div><small>Artifact SHA-256</small><code>{result.sha256}</code></div>}
+              {result.evidence_graph_digest&&<div><small>Evidence digest</small><code>{result.evidence_graph_digest}</code></div>}
+              {result.receipt_digest&&<div><small>Receipt digest</small><code>{result.receipt_digest}</code></div>}
+            </div>
+            <div className="resultActions"><button type="button">View evidence</button><button type="button">Download receipt</button><button type="button">Print</button></div>
+          </div>;
+        })()}
         {!result&&!error&&<div className="privacy">Fast intake · evidence first · no silent certainty</div>}
       </div>
     </section>
