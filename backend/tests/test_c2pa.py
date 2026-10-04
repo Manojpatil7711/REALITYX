@@ -89,6 +89,14 @@ def test_tampered_claim_fails_signature():
     assert verify_credential_signature(tampered, public_key_b64=public_key) is False
 
 
+def test_invalid_ed25519_signature_fails_closed():
+    private_key = Ed25519PrivateKey.generate()
+    signed = signed_credential(private_key)
+    invalid = signed.model_copy(update={"signature": "not-a-valid-signature"})
+    public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode("ascii")
+    assert verify_credential_signature(invalid, public_key_b64=public_key) is False
+
+
 def test_unsupported_algorithm_fails_closed():
     private_key = Ed25519PrivateKey.generate()
     signed = signed_credential(private_key)
