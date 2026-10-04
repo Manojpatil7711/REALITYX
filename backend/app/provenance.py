@@ -80,6 +80,37 @@ class SourceProvenance(BaseModel):
     original_creator_confirmed: bool = False
 
 
+def build_video_source_provenance(
+    *,
+    platform: SourcePlatform,
+    source_url: str | None = None,
+    source_user_or_account: str | None = None,
+    first_known_appearance: str | None = None,
+    confidence: SourceConfidence = SourceConfidence.UNKNOWN,
+    evidence_ids: list[str] | None = None,
+    original_creator_confirmed: bool = False,
+) -> SourceProvenance:
+    """Create a conservative video origin record.
+
+    A discovered account is not treated as the original creator unless the
+    caller supplies explicit supporting evidence and sets confirmation true.
+    """
+    evidence = list(evidence_ids or [])
+    if original_creator_confirmed and not evidence:
+        raise ValueError("creator confirmation requires evidence_ids")
+    if source_user_or_account is None and original_creator_confirmed:
+        raise ValueError("creator confirmation requires a source account")
+    return SourceProvenance(
+        platform=platform,
+        source_url=source_url,
+        source_user_or_account=source_user_or_account,
+        first_known_appearance=first_known_appearance,
+        confidence=confidence,
+        evidence_ids=evidence,
+        original_creator_confirmed=original_creator_confirmed,
+    )
+
+
 def source_provenance_digest(provenance: SourceProvenance) -> str:
     return sha256(canonical_json(provenance.model_dump(mode="json"))).hexdigest()
 
