@@ -65,6 +65,13 @@ def get_agent_trust(
     cryptographic_valid = bool(
         artifact.signature and artifact.signature_algorithm and verify_artifact_signature(artifact)
     )
+    if not artifact.signature or not artifact.signature_algorithm:
+        receipt_integrity = "unsigned"
+    elif cryptographic_valid:
+        receipt_integrity = "valid"
+    else:
+        receipt_integrity = "invalid_signature"
+
     key_id = None
     key_status = "unknown"
     if artifact.signature_algorithm and ":" in artifact.signature_algorithm:
@@ -88,6 +95,7 @@ def get_agent_trust(
         "conflict": artifact.conflict,
         "receipt_digest": artifact_digest(artifact),
         "cryptographic_valid": cryptographic_valid,
+        "receipt_integrity": receipt_integrity,
         "key_id": key_id,
         "key_status": key_status,
         "trust_document_digest": key_registry.public_document_digest(),
