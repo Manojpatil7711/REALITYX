@@ -78,3 +78,19 @@ class ApiKeyRegistry:
 
 
 registry = ApiKeyRegistry()
+
+
+PUBLIC_INTEGRATION_SCOPES = frozenset({"verify:image", "receipt:verify", "agent:trust"})
+
+
+def validate_public_scopes(scopes: tuple[str, ...] | list[str]) -> tuple[str, ...]:
+    """Normalize and fail closed on unknown public-integration scopes."""
+    normalized = tuple(dict.fromkeys(scope.strip() for scope in scopes if scope.strip()))
+    if not normalized:
+        raise ValueError("At least one API key scope is required")
+    if len(normalized) > 16:
+        raise ValueError("Too many API key scopes")
+    unknown = set(normalized) - PUBLIC_INTEGRATION_SCOPES
+    if unknown:
+        raise ValueError("Unsupported API key scope")
+    return normalized
