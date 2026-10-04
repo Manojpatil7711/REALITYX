@@ -71,7 +71,10 @@ export default function Home(){
   }
 
   function selectFile(file?:File){
-    if(file) addFiles(new DataTransfer().files);
+    if(!file) return;
+    const transfer=new DataTransfer();
+    transfer.items.add(file);
+    addFiles(transfer.files);
   }
 
   function imageFile(){
