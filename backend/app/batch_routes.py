@@ -17,12 +17,17 @@ class BatchManifest(BaseModel):
     paths: list[str] = Field(min_length=1, max_length=10_000)
 
 
+def _token(authorization: str | None, x_api_key: str | None) -> str:
+    if authorization and authorization.startswith("Bearer "):
+        return authorization[7:].strip()
+    return (x_api_key or "").strip()
+
+
 def require_batch_key(
     authorization: str | None = Header(default=None),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ):
-    token = authorization[7:].strip() if authorization and authorization.startswith("Bearer ") else (x_api_key or "").strip()
-    record = api_key_registry.authenticate(token, "batch:verify")
+    record = api_key_registry.authenticate(_token(authorization, x_api_key), "batch:verify")
     if record is None:
         raise HTTPException(status_code=401, detail="Invalid, expired, revoked, or insufficient API key")
     return record
@@ -32,11 +37,15 @@ def require_batch_read_key(
     authorization: str | None = Header(default=None),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ):
-    token = authorization[7:].strip() if authorization and authorization.startswith("Bearer ") else (x_api_key or "").strip()
-    record = api_key_registry.authenticate(token, "batch:read")
+    record = api_key_registry.authenticate(_token(authorization, x_api_key), "batch:read")
     if record is None:
         raise HTTPException(status_code=401, detail="Invalid, expired, revoked, or insufficient API key")
     return record
+
+
+def _owned(job, api_key) -> None:
+    if job.owner_key_id != api_key.key_id:
+        raise HTTPException(status_code=404, detail="Batch job not found")
 
 
 @router.post("/jobs")
@@ -47,7 +56,7 @@ def create_batch_job(document_count: int, request: Request, _api_key=Depends(req
     decision = receipt_read_limiter.check(identity)
     if not decision.allowed:
         raise HTTPException(status_code=429, detail="Rate limit exceeded", headers={"Retry-After": str(decision.retry_after_seconds)})
-    job = new_batch_job(document_count)
+    job = new_batch_job(document_count, owner_key_id=_api_key.key_id)
     _jobs[job.job_id] = job
     return {"job_id": job.job_id, "status": job.status.value, "document_count": job.document_count}
 
@@ -57,6 +66,7 @@ def ingest_manifest(job_id: str, manifest: BatchManifest, _api_key=Depends(requi
     job = _jobs.get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Batch job not found")
+    _owned(job, _api_key)
     try:
         files = validate_manifest(manifest.paths)
     except ValueError as exc:
@@ -79,6 +89,7 @@ def get_batch_job(job_id: str, _api_key=Depends(require_batch_read_key)) -> dict
     job = _jobs.get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Batch job not found")
+    _owned(job, _api_key)
     return {
         "job_id": job.job_id,
         "status": job.status.value,
