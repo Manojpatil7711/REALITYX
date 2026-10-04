@@ -45,6 +45,27 @@ def test_pipeline_assigns_deterministic_evidence_identity(monkeypatch):
     assert first[0].evidence_id == second[0].evidence_id
 
 
+def test_pipeline_marks_timed_out_engine_as_failed(monkeypatch):
+    class HangingEngine(SignalEngine):
+        name = "hanging"
+
+        def analyze(self, data, context):
+            time.sleep(0.2)
+            return {"status": "available", "summary": "late"}
+
+    monkeypatch.setattr(pipeline, "ENGINE_REGISTRY", (HangingEngine,))
+    monkeypatch.setattr(pipeline, "ENGINE_TIMEOUT_SECONDS", 0.02)
+
+    started = time.perf_counter()
+    evidence = pipeline.run_signal_pipeline(b"data", "v", "s")
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 0.1
+    assert evidence[0].status is SignalStatus.FAILED
+    assert evidence[0].details["error_code"] == "SIGNAL_TIMEOUT"
+    assert evidence[0].verdict is None
+
+
 def test_fact_engine_is_explicitly_classified():
     class FactEngine(SignalEngine):
         name = "fact_test"

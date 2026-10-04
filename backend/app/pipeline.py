@@ -1,11 +1,25 @@
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 from .contracts import Evidence, EvidenceKind, SignalStatus, SignalVerdict
 from .engines import ENGINE_REGISTRY, EngineContext
 
 logger = logging.getLogger("realityx.pipeline")
+
+ENGINE_TIMEOUT_SECONDS = 10.0
+
+
+def _failed_evidence(engine_type, elapsed: float, error_code: str) -> Evidence:
+    return Evidence(
+        evidence_id=engine_type.name,
+        source_group=engine_type.name,
+        signal=engine_type.name,
+        status=SignalStatus.FAILED,
+        summary="ही तपासणी सध्या पूर्ण झाली नाही; उपलब्ध पुराव्यावरच निष्कर्ष दिला आहे.",
+        details={"error_code": error_code},
+        latency_ms=elapsed,
+    )
 
 
 def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
@@ -53,14 +67,7 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
                 "error_code": "SIGNAL_FAILURE",
             },
         )
-        return Evidence(
-            evidence_id=evidence_id,
-            source_group=engine.name,
-            signal=engine.name,
-            status=SignalStatus.FAILED,
-            summary="ही तपासणी सध्या पूर्ण झाली नाही; उपलब्ध पुराव्यावरच निष्कर्ष दिला आहे.",
-            latency_ms=elapsed,
-        )
+        return _failed_evidence(engine_type, elapsed, "SIGNAL_FAILURE")
 
 
 def run_signal_pipeline(data: bytes, verification_id: str, media_sha256: str) -> list[Evidence]:
@@ -70,6 +77,40 @@ def run_signal_pipeline(data: bytes, verification_id: str, media_sha256: str) ->
         return []
 
     max_workers = max(1, min(8, len(engine_types)))
-    with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="rx-signal") as executor:
-        futures = [executor.submit(_run_engine, engine_type, data, context) for engine_type in engine_types]
-        return [future.result() for future in futures]
+    executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="rx-signal")
+    futures = [executor.submit(_run_engine, engine_type, data, context) for engine_type in engine_types]
+    results: list[Evidence] = []
+
+    try:
+        for engine_type, future in zip(engine_types, futures):
+            started = time.perf_counter()
+            try:
+                results.append(future.result(timeout=ENGINE_TIMEOUT_SECONDS))
+            except TimeoutError:
+                elapsed = (time.perf_counter() - started) * 1000
+                logger.error(
+                    "signal timed out",
+                    extra={
+                        "verification_id": verification_id,
+                        "signal_name": engine_type.name,
+                        "status": "failed",
+                        "error_code": "SIGNAL_TIMEOUT",
+                        "timeout_seconds": ENGINE_TIMEOUT_SECONDS,
+                    },
+                )
+                results.append(_failed_evidence(engine_type, elapsed, "SIGNAL_TIMEOUT"))
+            except Exception:
+                elapsed = (time.perf_counter() - started) * 1000
+                logger.exception(
+                    "signal future failed",
+                    extra={
+                        "verification_id": verification_id,
+                        "signal_name": engine_type.name,
+                        "status": "failed",
+                        "error_code": "SIGNAL_FUTURE_FAILURE",
+                    },
+                )
+                results.append(_failed_evidence(engine_type, elapsed, "SIGNAL_FUTURE_FAILURE"))
+        return results
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
