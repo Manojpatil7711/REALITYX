@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from typing import Any
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .contracts import Evidence, VerificationArtifact, VerificationResponse
 
@@ -50,13 +54,11 @@ def verify_artifact_signature(artifact: VerificationArtifact) -> bool:
     prefix, sep, key_id = artifact.signature_algorithm.partition(":")
     if prefix != "Ed25519" or not sep or not key_id:
         return False
-    record = __import__("app.key_registry", fromlist=["registry"]).registry.require_active(key_id)
     try:
-        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-        import base64
+        record = __import__("app.key_registry", fromlist=["registry"]).registry.require_active(key_id)
         public_raw = base64.b64decode(record.public_key, validate=True)
         signature = base64.b64decode(artifact.signature, validate=True)
         Ed25519PublicKey.from_public_bytes(public_raw).verify(signature, artifact_payload(artifact))
         return True
-    except (ValueError, TypeError):
+    except (InvalidSignature, RuntimeError, ValueError, TypeError):
         return False
