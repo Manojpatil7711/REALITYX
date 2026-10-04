@@ -41,3 +41,22 @@ def build_artifact(response: VerificationResponse) -> VerificationArtifact:
         engine_version=response.engine_version,
         evidence_hash=evidence_hash(response.evidence),
     )
+
+
+def verify_artifact_signature(artifact: VerificationArtifact) -> bool:
+    """Verify an Ed25519 receipt against its registered active public key."""
+    if artifact.signature_algorithm is None or artifact.signature is None:
+        return False
+    prefix, sep, key_id = artifact.signature_algorithm.partition(":")
+    if prefix != "Ed25519" or not sep or not key_id:
+        return False
+    record = __import__("app.key_registry", fromlist=["registry"]).registry.require_active(key_id)
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        import base64
+        public_raw = base64.b64decode(record.public_key, validate=True)
+        signature = base64.b64decode(artifact.signature, validate=True)
+        Ed25519PublicKey.from_public_bytes(public_raw).verify(signature, artifact_payload(artifact))
+        return True
+    except (ValueError, TypeError):
+        return False
