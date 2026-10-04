@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import PurePosixPath
 import hashlib
+from io import BytesIO
+from zipfile import BadZipFile, ZipFile
 
 
 MAX_DOCUMENTS = 10_000
@@ -61,6 +63,63 @@ def validate_manifest(paths: list[str]) -> tuple[IngestedFile, ...]:
         raise ValueError("No supported document files found")
     return tuple(result)
 
+
+MAX_ZIP_BYTES = 100 * 1024 * 1024
+MAX_ZIP_UNCOMPRESSED_BYTES = 500 * 1024 * 1024
+MAX_ZIP_ENTRY_BYTES = 25 * 1024 * 1024
+MAX_ZIP_COMPRESSION_RATIO = 100
+
+
+@dataclass(frozen=True)
+class ZipEntry:
+    relative_path: str
+    size_bytes: int
+    compressed_size_bytes: int
+    extension: str
+
+
+def validate_zip_archive(data: bytes) -> tuple[ZipEntry, ...]:
+    """Validate ZIP metadata without extracting untrusted files."""
+    if not data:
+        raise ValueError("ZIP archive must not be empty")
+    if len(data) > MAX_ZIP_BYTES:
+        raise ValueError("ZIP archive exceeds maximum size")
+    try:
+        archive = ZipFile(BytesIO(data))
+    except (BadZipFile, OSError) as exc:
+        raise ValueError("Invalid ZIP archive") from exc
+    entries: list[ZipEntry] = []
+    total_uncompressed = 0
+    seen: set[str] = set()
+    with archive:
+        infos = archive.infolist()
+        if len(infos) > MAX_DOCUMENTS:
+            raise ValueError("ZIP contains too many entries")
+        for info in infos:
+            raw = info.filename
+            mode = (info.external_attr >> 16) & 0o170000
+            if mode == 0o120000:
+                raise ValueError("ZIP symlinks are not allowed")
+            normalized = normalize_relative_path(raw)
+            if normalized in seen:
+                raise ValueError("ZIP contains duplicate document paths")
+            seen.add(normalized)
+            if info.is_dir():
+                continue
+            if info.file_size > MAX_ZIP_ENTRY_BYTES:
+                raise ValueError("ZIP entry exceeds maximum file size")
+            total_uncompressed += info.file_size
+            if total_uncompressed > MAX_ZIP_UNCOMPRESSED_BYTES:
+                raise ValueError("ZIP uncompressed size exceeds safety limit")
+            if info.file_size and info.compress_size and info.file_size / info.compress_size > MAX_ZIP_COMPRESSION_RATIO:
+                raise ValueError("ZIP compression ratio exceeds safety limit")
+            suffix = PurePosixPath(normalized).suffix.lower()
+            if suffix not in ALLOWED_EXTENSIONS:
+                continue
+            entries.append(ZipEntry(normalized, info.file_size, info.compress_size, suffix[1:]))
+    if not entries:
+        raise ValueError("No supported document files found in ZIP")
+    return tuple(entries)
 
 def content_sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
