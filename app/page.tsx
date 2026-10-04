@@ -39,9 +39,80 @@ export default function Home(){
  return <main>
   <nav className="nav"><div className="brand"><span className="mark">R×</span> REALITYX</div><div className="navlinks"><a href="#how">How it works</a><a href="#plans">Plans</a><a href="#intelligence">Intelligence</a><a href="#security">Security</a></div><div className="navActions"><label className="language"><span>◎</span><select aria-label={t.language} value={lang} onChange={e=>setLang(e.target.value)}>{languages.map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label><button className="ghost">Sign in</button></div></nav>
 
-  <section className="hero"><div className="heroGlow"/><div className="eyebrow">{t.eyebrow}</div><h1>{t.title}</h1><p className="lead">{t.lead}</p>
-   <div className="heroTrust"><span>● Evidence-first</span><span>● Privacy-minded</span><span>● Provider-neutral</span><span>● Uncertainty is allowed</span></div>
-   <div className="verifyCard"><div className="drop" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inputRef.current?.click()}}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f&&f.type.startsWith("image/")){const dt=new DataTransfer();dt.items.add(f);if(inputRef.current)inputRef.current.files=dt.files;setFileName(f.name);setResult(null);setError("")}}} onClick={()=>inputRef.current?.click()}><div className="uploadIcon">↑</div><h2>{checking?(stage||"Verifying…"):"Drop something to verify"}</h2><p>Image verification is available first. More media and authority connectors are added as production services are verified.</p><input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{setFileName(e.target.files?.[0]?.name??"");setResult(null);setError("")}}/>{fileName&&<div className="filename">{fileName}</div>}</div><button className="primary" onClick={verify} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>{error&&<div className="verifyError" role="alert">{error}</div>}{result&&<div className="verifyResult" aria-live="polite"><div className="resultTop"><span className="statusDot"/><b>{result.result??"UNCERTAIN"}</b>{typeof result.confidence==="number"&&<span>{Math.round(result.confidence*100)}% confidence</span>}</div>{result.sha256&&<code>{result.sha256}</code>}{result.verification_id&&<small>Verification ID: {result.verification_id}</small>}</div>}{!result&&!error&&<><div className="quickTrust"><span>FAST PATH</span><span>NO BLIND AI DECISION</span><span>ABSTAIN WHEN UNCERTAIN</span></div><div className="privacy">Private by design · Evidence first · Uncertainty is reported</div></>}</div>
+  <section className="hero">
+   <div className="heroGlow"/>
+   <div className="eyebrow">{t.eyebrow}</div>
+   <h1>{t.title}</h1>
+   <p className="lead">{t.lead}</p>
+   <div className="heroTrust">
+    <span>● Evidence-first</span><span>● Privacy-minded</span><span>● Provider-neutral</span><span>● Uncertainty is allowed</span>
+   </div>
+   <div className="verifyCard">
+    <div
+     className="drop"
+     role="button"
+     tabIndex={0}
+     onKeyDown={e => {
+      if (e.key === "Enter" || e.key === " ") {
+       e.preventDefault();
+       inputRef.current?.click();
+      }
+     }}
+     onDragOver={e => e.preventDefault()}
+     onDrop={e => {
+      e.preventDefault();
+      const f = e.dataTransfer.files?.[0];
+      if (f && f.type.startsWith("image/")) {
+       const dt = new DataTransfer();
+       dt.items.add(f);
+       if (inputRef.current) inputRef.current.files = dt.files;
+       setFileName(f.name);
+       setResult(null);
+       setError("");
+      }
+     }}
+     onClick={() => inputRef.current?.click()}
+    >
+     <div className="uploadIcon">↑</div>
+     <h2>{checking ? (stage || "Verifying…") : "Drop something to verify"}</h2>
+     <p>Image verification is available first. More media and authority connectors are added as production services are verified.</p>
+     <input
+      ref={inputRef}
+      hidden
+      type="file"
+      accept="image/jpeg,image/png,image/webp"
+      onChange={e => {
+       setFileName(e.target.files?.[0]?.name ?? "");
+       setResult(null);
+       setError("");
+      }}
+     />
+     {fileName && <div className="filename">{fileName}</div>}
+    </div>
+    <button className="primary" onClick={verify} disabled={checking}>
+     {checking ? "Analyzing…" : t.verify}<span>→</span>
+    </button>
+    {error && <div className="verifyError" role="alert">{error}</div>}
+    {result && (
+     <div className="verifyResult" aria-live="polite">
+      <div className="resultTop">
+       <span className="statusDot"/>
+       <b>{result.result ?? "UNCERTAIN"}</b>
+       {typeof result.confidence === "number" && <span>{Math.round(result.confidence * 100)}% confidence</span>}
+      </div>
+      {result.sha256 && <code>{result.sha256}</code>}
+      {result.verification_id && <small>Verification ID: {result.verification_id}</small>}
+     </div>
+    )}
+    {!result && !error && (
+     <>
+      <div className="quickTrust">
+       <span>FAST PATH</span><span>NO BLIND AI DECISION</span><span>ABSTAIN WHEN UNCERTAIN</span>
+      </div>
+      <div className="privacy">Private by design · Evidence first · Uncertainty is reported</div>
+     </>
+    )}
+   </div>
   </section>
 
   <section className="controlCenter" aria-label="Verification Control Center">
