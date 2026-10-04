@@ -47,7 +47,7 @@ class ApiKeyRegistry:
         key_id = secrets.token_urlsafe(18)
         secret = secrets.token_urlsafe(KEY_BYTES)
         token = f"{KEY_PREFIX}{key_id}.{secret}"
-            record = ApiKeyRecord(key_id, _digest(secret), frozenset(normalized_scopes), _utc_now(), expires_at)
+        record = ApiKeyRecord(key_id, _digest(secret), frozenset(normalized_scopes), _utc_now(), expires_at)
         self._records[key_id] = record
         return token, record
 
