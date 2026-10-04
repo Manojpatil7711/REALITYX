@@ -7,10 +7,9 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from fastapi import APIRouter, HTTPException
 
-from .attestation import canonical_json
+from .attestation import artifact_digest, canonical_json
 from .key_registry import registry
 from .receipt_store import store
-from .signing import artifact_digest
 
 router = APIRouter(prefix="/receipts")
 

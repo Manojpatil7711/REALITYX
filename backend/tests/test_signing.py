@@ -3,10 +3,10 @@ import base64
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from app.attestation import canonical_json
+from app.attestation import artifact_digest, canonical_json
 from app.contracts import VerificationArtifact, VerificationResult
 from app.key_registry import PublicKeyRecord, registry
-from app.signing import artifact_digest, sign_artifact
+from app.signing import sign_artifact
 
 
 def artifact():
@@ -66,3 +66,24 @@ def test_sign_artifact_rejects_mismatched_public_key(monkeypatch):
     monkeypatch.setenv("REALITYX_SIGNING_PRIVATE_KEY_B64", base64.b64encode(private.private_bytes_raw()).decode())
     with pytest.raises(RuntimeError, match="does not match"):
         sign_artifact(artifact())
+
+
+def test_required_signing_fails_closed_without_credentials(monkeypatch):
+    reset_registry()
+    monkeypatch.delenv("REALITYX_SIGNING_KEY_ID", raising=False)
+    monkeypatch.delenv("REALITYX_SIGNING_PRIVATE_KEY_B64", raising=False)
+    monkeypatch.setenv("REALITYX_REQUIRE_SIGNING", "true")
+
+    with pytest.raises(RuntimeError, match="signing is required"):
+        sign_artifact(artifact())
+
+
+def test_signing_remains_optional_for_development(monkeypatch):
+    reset_registry()
+    monkeypatch.delenv("REALITYX_SIGNING_KEY_ID", raising=False)
+    monkeypatch.delenv("REALITYX_SIGNING_PRIVATE_KEY_B64", raising=False)
+    monkeypatch.delenv("REALITYX_REQUIRE_SIGNING", raising=False)
+
+    unsigned = sign_artifact(artifact())
+    assert unsigned.signature is None
+    assert unsigned.signature_algorithm is None
