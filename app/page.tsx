@@ -102,9 +102,23 @@ export default function Home(){
       </div>
       {result.sha256 && <code>{result.sha256}</code>}
       {result.verification_id && <small>Verification ID: {result.verification_id}</small>}
+      {result && (
+       <div className="decisionPanel">
+        <div className="decisionEyebrow">DECISION SUPPORT</div>
+        <h3>{result.result === "AUTHENTIC" ? "Evidence supports authenticity." : result.result === "INAUTHENTIC" ? "Evidence indicates manipulation or inauthenticity." : "Evidence is not strong enough for a safe binary decision."}</h3>
+        <p>{result.result === "AUTHENTIC" ? "Use this result as a verification signal, then consider provenance and source context before high-impact decisions." : result.result === "INAUTHENTIC" ? "Treat the item as high-risk until independently reviewed. Do not rely on it alone for legal, financial or safety-critical decisions." : "Do not force a yes/no conclusion. Seek additional independent evidence or human review."}</p>
+        <div className="decisionActions">
+         <span>✓ Evidence reviewed</span>
+         <span>✓ Confidence shown</span>
+         <span>✓ Uncertainty preserved</span>
+        </div>
+        <div className="decisionNext"><b>Recommended next step</b><span>{result.result === "UNCERTAIN" ? "Add independent evidence → review again" : "Check provenance + source context → decide"}</span></div>
+       </div>
+      )}
      </div>
     )}
     {!result && !error && (
+
      <>
       <div className="quickTrust">
        <span>FAST PATH</span><span>NO BLIND AI DECISION</span><span>ABSTAIN WHEN UNCERTAIN</span>
@@ -131,6 +145,15 @@ export default function Home(){
    <div className="controlNote"><span className="statusDot"/><b>Current release:</b> image verification is the first live path. Deep media engines, external authority connectors and paid entitlements remain disabled until independently verified.</div>
   </section>
 
+  <section className="decisionGuide" aria-label="Decision guide">
+   <div className="sectionHead"><div><div className="eyebrow">MAKE A BETTER DECISION</div><h2>Clear evidence. Clear limits. Your decision.</h2></div><p>REALITYX separates verification from judgment. You see what the system found, how confident it is, what remains unknown, and what to do next.</p></div>
+   <div className="decisionGrid">
+    <div><span>01</span><b>SEE THE RESULT</b><p>AUTHENTIC, INAUTHENTIC or UNCERTAIN — never a forced binary answer.</p></div>
+    <div><span>02</span><b>UNDERSTAND WHY</b><p>Evidence signals and confidence are shown before you act.</p></div>
+    <div><span>03</span><b>CHECK THE LIMITS</b><p>Missing provenance, conflicts and unavailable engines stay visible.</p></div>
+    <div><span>04</span><b>CHOOSE THE NEXT STEP</b><p>Verify more, seek independent evidence, or proceed when the evidence supports it.</p></div>
+   </div>
+  </section>
   <section className="types">{types.map(([name,desc])=><div className="type" key={name}><div className="dot"/><div><strong>{name}</strong><span>{desc}</span></div></div>)}</section>
 
   <section className="plans" id="plans"><div className="planIntro"><div className="eyebrow">SIMPLE ACCESS</div><h2>Free to start.<br/>Power when you need it.</h2><p>No confusing tiers. The core experience stays clear; advanced services unlock as they become production-ready.</p></div>
