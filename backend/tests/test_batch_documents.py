@@ -9,9 +9,16 @@ from app.provenance import SourceConfidence, SourcePlatform, SourceProvenance, s
 
 
 def test_batch_job_starts_accepted():
-    job = new_batch_job(3)
+    job = new_batch_job(3, owner_key_id="key-001")
     assert job.status is BatchJobStatus.ACCEPTED
     assert job.document_count == 3
+    assert job.owner_key_id == "key-001"
+
+
+def test_batch_job_requires_owner_key():
+    import pytest
+    with pytest.raises(ValueError, match="owner_key_id"):
+        new_batch_job(3, owner_key_id=" ")
 
 
 def test_document_fingerprint_is_deterministic():
