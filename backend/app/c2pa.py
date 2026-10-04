@@ -11,6 +11,7 @@ import base64
 from enum import StrEnum
 from hashlib import sha256
 
+from cryptography.exceptions import InvalidSignature
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .attestation import canonical_json
@@ -68,7 +69,7 @@ def verify_credential_signature(
             signature, credential_signing_payload(credential)
         )
         return True
-    except (ValueError, TypeError):
+    except (InvalidSignature, ValueError, TypeError):
         return False
 
 
