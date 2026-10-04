@@ -3,16 +3,18 @@
 Provenance is supporting evidence, not automatic proof of authenticity.
 Untrusted claims remain claims until cryptographically and semantically validated.
 """
-
 from __future__ import annotations
 
+import json
 from enum import StrEnum
 from hashlib import sha256
 from typing import Iterable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .attestation import canonical_json
+
+def canonical_json(value: object) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 class ProvenanceSource(StrEnum):
@@ -68,7 +70,6 @@ class SourceProvenance(BaseModel):
     A source account is only reported when supported by evidence. It never
     turns a likely source into a confirmed original creator by itself.
     """
-
     model_config = ConfigDict(extra="forbid")
     platform: SourcePlatform = SourcePlatform.UNKNOWN
     source_url: str | None = Field(default=None, max_length=2048)
@@ -84,12 +85,8 @@ def source_provenance_digest(provenance: SourceProvenance) -> str:
 
 
 def provenance_digest(records: Iterable[ProvenanceRecord]) -> str:
-    canonical = sorted(
-        (record.model_dump(mode="json") for record in records),
-        key=lambda item: canonical_json(item),
-    )
-    payload = canonical_json(canonical)
-    return sha256(payload).hexdigest()
+    canonical = sorted((record.model_dump(mode="json") for record in records), key=canonical_json)
+    return sha256(canonical_json(canonical)).hexdigest()
 
 
 def assess_provenance(records: list[ProvenanceRecord]) -> ProvenanceTrust:
