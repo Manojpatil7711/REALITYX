@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
-import re
+import hmac
+import os
+import unicodedata
 
 
 @dataclass(frozen=True)
@@ -24,18 +26,30 @@ class IdentityMatch:
 def _norm(value: str | None) -> str | None:
     if not value:
         return None
-    cleaned = re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+    value = unicodedata.normalize("NFKC", value).casefold()
+    cleaned = " ".join(value.split())
     return cleaned or None
 
 
-def pseudonymous_identity_key(signals: IdentitySignals) -> str:
-    """Non-reversible grouping key; not an authenticity proof."""
+def pseudonymous_identity_key(signals: IdentitySignals, *, tenant_salt: bytes | None = None) -> str:
+    """Non-reversible grouping key; not an authenticity proof.
+
+    A tenant-specific secret salt is preferred in production so identical
+    identity data cannot be correlated across tenants.
+    """
     values = tuple(_norm(v) or "" for v in (
         signals.name, signals.date_of_birth, signals.document_number, signals.address
     ))
     if not any(values):
         raise ValueError("at least one identity signal is required")
-    return hashlib.sha256("|".join(values).encode("utf-8")).hexdigest()
+    salt = tenant_salt
+    if salt is None:
+        configured = os.getenv("REALITYX_IDENTITY_HMAC_KEY")
+        salt = configured.encode("utf-8") if configured else None
+    payload = "|".join(values).encode("utf-8")
+    if salt:
+        return hmac.new(salt, payload, hashlib.sha256).hexdigest()
+    return hashlib.sha256(payload).hexdigest()
 
 
 def match_identity(left: IdentitySignals, right: IdentitySignals) -> IdentityMatch:
