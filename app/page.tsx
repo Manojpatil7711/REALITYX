@@ -44,6 +44,22 @@ export default function Home(){
    <div className="verifyCard"><div className="drop" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inputRef.current?.click()}}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f&&f.type.startsWith("image/")){const dt=new DataTransfer();dt.items.add(f);if(inputRef.current)inputRef.current.files=dt.files;setFileName(f.name);setResult(null);setError("")}}} onClick={()=>inputRef.current?.click()}><div className="uploadIcon">↑</div><h2>{checking?(stage||"Verifying…"):"Drop something to verify"}</h2><p>Image verification is available first. More media and authority connectors are added as production services are verified.</p><input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{setFileName(e.target.files?.[0]?.name??"");setResult(null);setError("")}}/>{fileName&&<div className="filename">{fileName}</div>}</div><button className="primary" onClick={verify} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>{error&&<div className="verifyError" role="alert">{error}</div>}{result&&<div className="verifyResult" aria-live="polite"><div className="resultTop"><span className="statusDot"/><b>{result.result??"UNCERTAIN"}</b>{typeof result.confidence==="number"&&<span>{Math.round(result.confidence*100)}% confidence</span>}</div>{result.sha256&&<code>{result.sha256}</code>}{result.verification_id&&<small>Verification ID: {result.verification_id}</small>}</div>}{!result&&!error&&<div className="quickTrust"><span>FAST PATH</span><span>NO BLIND AI DECISION</span><span>ABSTAIN WHEN UNCERTAIN</span></div><div className="privacy">Private by design · Evidence first · Uncertainty is reported</div>}</div>
   </section>
 
+  <section className="controlCenter" aria-label="Verification Control Center">
+   <div className="controlHead"><div><div className="eyebrow">VERIFICATION CONTROL CENTER</div><h2>Instant visibility. No hidden guesses.</h2></div><p>Every stage reflects the real verification pipeline. Unavailable production engines stay clearly marked instead of producing invented evidence.</p></div>
+   <div className="controlTrack">
+    <div className="controlStep active"><span>01</span><b>Fast Scan</b><small>Integrity · hash · basic signals</small></div>
+    <div className="controlLine"/>
+    <div className="controlStep"><span>02</span><b>Deep Scan</b><small>Advanced engines when connected</small></div>
+    <div className="controlLine"/>
+    <div className="controlStep"><span>03</span><b>Evidence Fusion</b><small>Independent evidence + abstention</small></div>
+    <div className="controlLine"/>
+    <div className="controlStep"><span>04</span><b>Risk</b><small>Policy-controlled risk assessment</small></div>
+    <div className="controlLine"/>
+    <div className="controlStep final"><span>05</span><b>Final Decision</b><small>Verified · Manipulated · Uncertain</small></div>
+   </div>
+   <div className="controlNote"><span className="statusDot"/><b>Current release:</b> image verification is the first live path. Deep media engines, external authority connectors and paid entitlements remain disabled until independently verified.</div>
+  </section>
+
   <section className="types">{types.map(([name,desc])=><div className="type" key={name}><div className="dot"/><div><strong>{name}</strong><span>{desc}</span></div></div>)}</section>
 
   <section className="plans" id="plans"><div className="planIntro"><div className="eyebrow">SIMPLE ACCESS</div><h2>Free to start.<br/>Power when you need it.</h2><p>No confusing tiers. The core experience stays clear; advanced services unlock as they become production-ready.</p></div>
