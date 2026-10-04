@@ -46,12 +46,8 @@ def new_page_artifact(*, source_document_id: str, page_number: int, page_bytes: 
     )
 
 
-def separate_pdf_pages(*, source_document_id: str, pdf_bytes: bytes) -> tuple[PDFPageArtifact, ...]:
-    """Split a bounded PDF into independently addressable page artifacts.
-
-    The page bytes are deterministic serialized single-page PDFs. They are
-    artifacts for downstream OCR/classification, not authenticity evidence.
-    """
+def extract_pdf_pages(*, source_document_id: str, pdf_bytes: bytes) -> tuple[tuple[PDFPageArtifact, bytes], ...]:
+    """Split a bounded PDF into deterministic page artifacts and page bytes."""
     if not source_document_id.strip():
         raise ValueError("source_document_id must not be empty")
     if not pdf_bytes:
@@ -63,7 +59,7 @@ def separate_pdf_pages(*, source_document_id: str, pdf_bytes: bytes) -> tuple[PD
     if len(reader.pages) > MAX_PDF_PAGES:
         raise ValueError("pdf exceeds maximum page count")
 
-    artifacts: list[PDFPageArtifact] = []
+    artifacts: list[tuple[PDFPageArtifact, bytes]] = []
     for index, page in enumerate(reader.pages, start=1):
         output = BytesIO()
         from pypdf import PdfWriter
@@ -71,11 +67,26 @@ def separate_pdf_pages(*, source_document_id: str, pdf_bytes: bytes) -> tuple[PD
         writer = PdfWriter()
         writer.add_page(page)
         writer.write(output)
+        serialized = output.getvalue()
         artifacts.append(
-            new_page_artifact(
-                source_document_id=source_document_id,
-                page_number=index,
-                page_bytes=output.getvalue(),
+            (
+                new_page_artifact(
+                    source_document_id=source_document_id,
+                    page_number=index,
+                    page_bytes=serialized,
+                ),
+                serialized,
             )
         )
     return tuple(artifacts)
+
+
+def separate_pdf_pages(*, source_document_id: str, pdf_bytes: bytes) -> tuple[PDFPageArtifact, ...]:
+    """Split a bounded PDF into independently addressable page artifacts."""
+    return tuple(
+        artifact
+        for artifact, _page_bytes in extract_pdf_pages(
+            source_document_id=source_document_id,
+            pdf_bytes=pdf_bytes,
+        )
+    )
