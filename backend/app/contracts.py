@@ -72,8 +72,8 @@ class VerificationResponse(BaseModel):
     confidence: float
     signals: list[Evidence]
     evidence: list[Evidence]
-    risk_domain: str
-    risk_level: str
-    risk_action: str
-    risk_confidence: float
-    risk_reasons: list[str]
+    risk_domain: str = "unknown"
+    risk_level: str = "uncertain"
+    risk_action: str = "reverify"
+    risk_confidence: float = 0.0
+    risk_reasons: list[str] = Field(default_factory=list)
