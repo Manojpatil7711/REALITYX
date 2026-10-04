@@ -10,6 +10,8 @@ from enum import StrEnum
 from hashlib import sha256
 from typing import Iterable
 
+from .attestation import canonical_json
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -42,8 +44,8 @@ class ProvenanceRecord(BaseModel):
 
 def provenance_digest(records: Iterable[ProvenanceRecord]) -> str:
     canonical = sorted(
-        record.model_dump(mode="json")
-        for record in records
+        (record.model_dump(mode="json") for record in records),
+        key=lambda item: canonical_json(item),
     )
     payload = repr(canonical).encode("utf-8")
     return sha256(payload).hexdigest()
