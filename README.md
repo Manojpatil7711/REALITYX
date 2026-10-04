@@ -48,6 +48,23 @@ Operational rule: **new AI capability → measure → benchmark → compare agai
 
 The operator-facing workflow profiles also define clear paths for government, legal/investigation, media, business/platform and public verification so users are not forced to understand the underlying engineering.
 
+## Public identity and ownership-proof boundary
+
+REALITYX exposes a machine-readable public identity document at
+`/.well-known/realityx-identity`. It publishes the product identity,
+operator display name, preferred domain and an explicit ownership status.
+
+Ownership is **fail-closed**: the default state is `unverified`. A production
+deployment must independently establish domain/account ownership before
+configuring `domain_verified` or `owner_verified`. The public identity
+digest makes changes to the published identity detectable without exposing
+secrets.
+
+The identity layer is deliberately separate from verification results,
+cryptographic receipts and external certification. A REALITYX badge must
+never imply government, legal or regulatory certification unless an authorized
+body has actually issued that certification.
+
 ## Trust-layer vision
 
 REALITYX is designed to become a **machine-verifiable reality verification layer** that AI agents, platforms, institutions, researchers, businesses, and people can query before trusting digital content.

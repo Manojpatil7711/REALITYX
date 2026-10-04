@@ -5,6 +5,7 @@ from .routes import router
 from .key_routes import router as key_router
 from .receipt_routes import router as receipt_router
 from .operations import router as operations_router
+from .site_identity import identity_digest, load_site_identity
 from .key_registry import load_env_key
 
 configure_logging()
@@ -22,6 +23,13 @@ app.include_router(owner_router, prefix="/v1")
 app.include_router(key_router, prefix="/v1")
 app.include_router(receipt_router, prefix="/v1")
 app.include_router(operations_router, prefix="/v1")
+
+
+@app.get("/.well-known/realityx-identity")
+def realityx_identity() -> dict[str, object]:
+    """Machine-readable public identity; ownership status is fail-closed by default."""
+    identity = load_site_identity()
+    return {"identity": identity.public_document(), "identity_digest": identity_digest(identity)}
 
 
 @app.get("/health")
