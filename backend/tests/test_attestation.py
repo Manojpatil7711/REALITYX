@@ -6,6 +6,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from app.contracts import Evidence, EvidenceKind, SignalStatus, VerificationResponse, VerificationResult
 
 
+def _response(verification_id="v-1", sha="a" * 64):
+    evidence = [Evidence(signal="integrity", status=SignalStatus.AVAILABLE, summary="ok")]
+    return VerificationResponse(verification_id=verification_id, sha256=sha, result=VerificationResult.UNCERTAIN, confidence=0.0, signals=evidence, evidence=evidence, evidence_graph_digest="d" * 64)
+
+
 def test_canonical_json_is_stable():
     assert canonical_json({"b": 2, "a": 1}) == canonical_json({"a": 1, "b": 2})
 
@@ -16,50 +21,36 @@ def test_evidence_hash_is_stable_and_order_sensitive():
     assert evidence_hash([first, second]) != evidence_hash([second, first])
 
 
-def test_build_artifact_binds_media_and_evidence():
-    evidence = [Evidence(signal="integrity", status=SignalStatus.AVAILABLE, summary="ok")]
-    response = VerificationResponse(
-        verification_id="v-1",
-        sha256="a" * 64,
-        result=VerificationResult.UNCERTAIN,
-        confidence=0.0,
-        signals=evidence,
-        evidence=evidence,
-    )
-    artifact = build_artifact(response)
+def test_build_artifact_binds_media_evidence_and_policy():
+    artifact = build_artifact(_response())
     assert artifact.media_sha256 == "a" * 64
     assert artifact.verification_id == "v-1"
     assert len(artifact.evidence_hash) == 64
+    assert artifact.evidence_graph_digest == "d" * 64
+    assert artifact.policy_version == "2050.1"
     assert artifact.signature is None
 
 
+def test_build_artifact_requires_provenance_digest():
+    response = _response()
+    response.evidence_graph_digest = ""
+    try:
+        build_artifact(response)
+    except ValueError as exc:
+        assert "evidence graph digest" in str(exc)
+    else:
+        raise AssertionError("missing provenance digest must fail closed")
+
+
 def test_artifact_digest_ignores_signature_fields():
-    evidence = [Evidence(signal="integrity", status=SignalStatus.AVAILABLE, summary="ok")]
-    response = VerificationResponse(
-        verification_id="v-2",
-        sha256="b" * 64,
-        result=VerificationResult.VERIFIED,
-        confidence=0.9,
-        signals=evidence,
-        evidence=evidence,
-    )
-    artifact = build_artifact(response)
+    artifact = build_artifact(_response("v-2", "b" * 64))
     signed_shape = artifact.model_copy(update={"signature": "signature", "signature_algorithm": "Ed25519:key-1"})
     assert artifact_payload(artifact) == artifact_payload(signed_shape)
     assert artifact_digest(artifact) == artifact_digest(signed_shape)
 
 
 def test_artifact_digest_changes_when_bound_data_changes():
-    evidence = [Evidence(signal="integrity", status=SignalStatus.AVAILABLE, summary="ok")]
-    response = VerificationResponse(
-        verification_id="v-3",
-        sha256="c" * 64,
-        result=VerificationResult.UNCERTAIN,
-        confidence=0.1,
-        signals=evidence,
-        evidence=evidence,
-    )
-    artifact = build_artifact(response)
+    artifact = build_artifact(_response("v-3", "c" * 64))
     changed = artifact.model_copy(update={"confidence": 0.2})
     assert artifact_digest(artifact) != artifact_digest(changed)
 
