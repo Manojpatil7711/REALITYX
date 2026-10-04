@@ -44,13 +44,13 @@ class ContentCredential(BaseModel):
 
 
 def credential_digest(credential: ContentCredential) -> str:
-    return sha256(canonical_json(credential.model_dump(mode="json")).encode("utf-8")).hexdigest()
+    return sha256(canonical_json(credential.model_dump(mode="json"))).hexdigest()
 
 
 def credential_signing_payload(credential: ContentCredential) -> bytes:
     data = credential.model_dump(mode="json")
     data.pop("signature")
-    return canonical_json(data).encode("utf-8")
+    return canonical_json(data)
 
 
 def verify_credential_signature(
