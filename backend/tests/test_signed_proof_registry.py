@@ -79,6 +79,7 @@ def test_revoked_key_keeps_historical_crypto_validity(monkeypatch):
         record.key.created_at, record.key.expires_at,
         record.key.rotated_at, record.key.revoked_at, record.key.public_key,
     )
+    registry = TrustRegistry()
     registry.register(TrustRecord(record.provider, revoked, record.registry_version))
     result = verify_signed_proof(signed, registry)
     assert result.cryptographically_valid
@@ -96,6 +97,7 @@ def test_rotated_key_keeps_historical_crypto_validity(monkeypatch):
         record.key.created_at, record.key.expires_at,
         record.key.rotated_at, record.key.revoked_at, record.key.public_key,
     )
+    registry = TrustRegistry()
     registry.register(TrustRecord(record.provider, rotated, record.registry_version))
     result = verify_signed_proof(signed, registry)
     assert result.cryptographically_valid
