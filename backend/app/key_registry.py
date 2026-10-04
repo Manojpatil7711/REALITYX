@@ -4,6 +4,8 @@ import base64
 import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from hashlib import sha256
+import json
 
 
 @dataclass(frozen=True)
@@ -54,11 +56,28 @@ class KeyRegistry:
         return record
 
     def public_document(self) -> dict:
-        return {
-            "issuer": "REALITYX",
-            "keys": [record.__dict__ for record in self._keys.values() if record.status == "active"],
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        """Return a stable public trust document containing active keys only."""
+        keys = [
+            {
+                "key_id": record.key_id,
+                "algorithm": record.algorithm,
+                "public_key": record.public_key,
+                "status": record.status,
+                "created_at": record.created_at,
+                "retired_at": record.retired_at,
+                "revoked_at": record.revoked_at,
+            }
+            for record in sorted(self._keys.values(), key=lambda item: item.key_id)
+            if record.status == "active"
+        ]
+        return {"issuer": "REALITYX", "document_version": "1.0", "keys": keys}
+
+    def public_document_digest(self) -> str:
+        """Return a deterministic digest suitable for trust receipts/audits."""
+        canonical = json.dumps(
+            self.public_document(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return sha256(canonical).hexdigest()
 
 
 registry = KeyRegistry()
