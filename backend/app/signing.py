@@ -44,7 +44,12 @@ def sign_artifact(artifact: VerificationArtifact) -> VerificationArtifact:
         registered_public = base64.b64decode(record.public_key, validate=True)
         if derived_public != registered_public:
             raise RuntimeError("Signing private key does not match registered public key")
-        signature = private_key.sign(_payload(artifact))
+        signing_algorithm = f"{ALGORITHM}:{key_id}"
+        unsigned = artifact.model_copy(update={
+            "signature_algorithm": signing_algorithm,
+            "signature": None,
+        })
+        signature = private_key.sign(_payload(unsigned))
     except (ValueError, TypeError) as exc:
         raise RuntimeError("Invalid REALITYX Ed25519 signing key") from exc
 
