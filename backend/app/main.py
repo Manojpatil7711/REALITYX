@@ -8,6 +8,7 @@ from .operations import router as operations_router
 from .professional_routes import router as professional_router
 from .site_identity import identity_digest, load_site_identity
 from .key_registry import load_env_key, registry as key_registry
+from .agent_routes import router as agent_router
 
 configure_logging()
 load_env_key()
@@ -37,6 +38,7 @@ app.include_router(key_router, prefix="/v1")
 app.include_router(receipt_router, prefix="/v1")
 app.include_router(operations_router, prefix="/v1")
 app.include_router(professional_router, prefix="/v1")
+app.include_router(agent_router, prefix="/v1")
 
 
 @app.get("/.well-known/realityx-identity")
