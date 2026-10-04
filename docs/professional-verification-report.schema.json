@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realityx.example/schemas/professional-verification-report.schema.json",
+  "title": "REALITYX Professional Verification Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verification_id",
+    "artifact",
+    "verdict",
+    "conclusion",
+    "evidence_strength",
+    "evidence",
+    "provenance",
+    "protocol",
+    "limitations"
+  ],
+  "properties": {
+    "verification_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256"],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "media_type": {
+          "type": ["string", "null"]
+        },
+        "size_bytes": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["AUTHENTIC", "INAUTHENTIC", "UNCERTAIN"]
+    },
+    "conclusion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "evidence_strength": {
+      "type": "string",
+      "enum": ["STRONG", "MEDIUM", "WEAK", "INSUFFICIENT", "CONFLICTING"]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "status", "summary"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "category": {"type": "string", "minLength": 1},
+          "status": {
+            "type": "string",
+            "enum": [
+              "STRONG",
+              "MEDIUM",
+              "WEAK",
+              "NEGATIVE",
+              "CONFLICTING",
+              "NOT_AVAILABLE"
+            ]
+          },
+          "summary": {"type": "string", "minLength": 1},
+          "engine": {"type": ["string", "null"]},
+          "engine_version": {"type": ["string", "null"]},
+          "location": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "VERIFIED",
+            "AVAILABLE",
+            "MISSING",
+            "INCONSISTENT",
+            "UNSUPPORTED",
+            "NOT_CHECKED"
+          ]
+        },
+        "standard": {"type": ["string", "null"]},
+        "summary": {"type": ["string", "null"]}
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "engine_registry": {"type": ["string", "null"]},
+        "generated_at": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "receipt": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["UNSIGNED", "SIGNED", "REVOKED", "NOT_AVAILABLE"]
+        },
+        "algorithm": {"type": ["string", "null"]},
+        "signature": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
