@@ -51,3 +51,23 @@ def test_require_active_rejects_retired_and_revoked():
         registry.require_active("retired")
     with pytest.raises(RuntimeError, match="not active"):
         registry.require_active("revoked")
+
+
+def test_public_document_is_stable_and_digest_is_deterministic():
+    registry = KeyRegistry()
+    registry.register(_record("z-key", "active"))
+    first = registry.public_document()
+    first_digest = registry.public_document_digest()
+    second = registry.public_document()
+    assert first == second
+    assert first["document_version"] == "1.0"
+    assert first_digest == registry.public_document_digest()
+
+
+def test_public_document_digest_changes_when_active_key_changes():
+    registry = KeyRegistry()
+    registry.register(_record("key-1", "active"))
+    first_digest = registry.public_document_digest()
+    registry._keys.clear()
+    registry.register(_record("key-2", "active"))
+    assert registry.public_document_digest() != first_digest
