@@ -92,3 +92,13 @@ def test_shared_parent_lineage_is_recorded_and_digest_is_deterministic():
     graph_b = EvidenceGraph.from_evidence([child, root])
     assert root.evidence_id in child.parent_evidence_ids
     assert graph_a.digest() == graph_b.digest()
+
+
+def test_malformed_provenance_abstains_instead_of_crashing():
+    decision = fuse_evidence([
+        signal("authentic", 0.95, name="model", source_group="model", parents=["missing-parent"]),
+    ])
+    assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.confidence == 0.0
+    assert decision.independent_source_count == 0
+    assert decision.conflict is False

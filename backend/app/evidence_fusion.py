@@ -31,8 +31,20 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
     if not verdict_signals:
         return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
 
-    graph = EvidenceGraph.from_evidence(verdict_signals)
-    groups = graph.independent_source_groups(verdict_signals)
+    # Provenance is security-critical input. A malformed graph must never turn
+    # an untrusted upload into a 500 or an implicit positive/negative verdict.
+    try:
+        graph = EvidenceGraph.from_evidence(verdict_signals)
+        groups = graph.independent_source_groups(verdict_signals)
+    except ValueError:
+        return FusionDecision(
+            VerificationResult.UNCERTAIN,
+            0.0,
+            signals,
+            independent_source_count=0,
+            conflict=False,
+        )
+
     independent_count = len(groups)
 
     positive = [s.confidence for s in verdict_signals if s.verdict in {SignalVerdict.AUTHENTIC, SignalVerdict.VERIFIED}]
