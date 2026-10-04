@@ -1,8 +1,7 @@
 """Enterprise batch-document verification contracts and bounded job reference implementation.
 
-The batch layer accepts a folder/ZIP manifest through an API-key protected route.
-Actual OCR, document classification, authority checks, and durable workers remain
-separate engines so this contract can scale without coupling the API to a vendor.
+Classification is routing only. Authenticity and authority require evidence and
+must remain provider-neutral.
 """
 from __future__ import annotations
 
@@ -17,7 +16,12 @@ class DocumentKind(StrEnum):
     UNKNOWN = "unknown"
     AADHAAR = "aadhaar"
     PAN = "pan"
+    PASSPORT = "passport"
+    VISA = "visa"
     BANK_DOCUMENT = "bank_document"
+    DRIVER_LICENSE = "driver_license"
+    NATIONAL_ID = "national_id"
+    RESIDENCE_PERMIT = "residence_permit"
     PHOTO = "photo"
     OTHER = "other"
 
