@@ -1,14 +1,17 @@
-"""Provider-neutral, bounded PDF page ingestion contracts.
-
-Actual PDF decoding stays behind this adapter so the batch pipeline can add a
-vetted PDF engine without coupling core verification logic to one vendor.
-"""
+"""Bounded PDF page separation for enterprise batch ingestion."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
 from enum import StrEnum
+from io import BytesIO
+
+from pypdf import PdfReader
+
+
+MAX_PDF_PAGES = 500
+MAX_PDF_BYTES = 25 * 1024 * 1024
 
 
 class PageExtractionStatus(StrEnum):
@@ -41,3 +44,38 @@ def new_page_artifact(*, source_document_id: str, page_number: int, page_bytes: 
         page_number=page_number,
         page_sha256=page_sha256(page_bytes),
     )
+
+
+def separate_pdf_pages(*, source_document_id: str, pdf_bytes: bytes) -> tuple[PDFPageArtifact, ...]:
+    """Split a bounded PDF into independently addressable page artifacts.
+
+    The page bytes are deterministic serialized single-page PDFs. They are
+    artifacts for downstream OCR/classification, not authenticity evidence.
+    """
+    if not source_document_id.strip():
+        raise ValueError("source_document_id must not be empty")
+    if not pdf_bytes:
+        raise ValueError("pdf_bytes must not be empty")
+    if len(pdf_bytes) > MAX_PDF_BYTES:
+        raise ValueError("pdf exceeds maximum size")
+
+    reader = PdfReader(BytesIO(pdf_bytes), strict=False)
+    if len(reader.pages) > MAX_PDF_PAGES:
+        raise ValueError("pdf exceeds maximum page count")
+
+    artifacts: list[PDFPageArtifact] = []
+    for index, page in enumerate(reader.pages, start=1):
+        output = BytesIO()
+        from pypdf import PdfWriter
+
+        writer = PdfWriter()
+        writer.add_page(page)
+        writer.write(output)
+        artifacts.append(
+            new_page_artifact(
+                source_document_id=source_document_id,
+                page_number=index,
+                page_bytes=output.getvalue(),
+            )
+        )
+    return tuple(artifacts)
