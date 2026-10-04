@@ -1,16 +1,26 @@
-from app.verification_policy import UnifiedVerificationDecision
+from app.contracts import VerificationResult
+from app.risk_assessment import RecommendedAction, RiskAssessment, RiskDomain, RiskLevel
+from app.verification_policy import AuthorityStatus, UnifiedVerificationDecision
 from app.verification_proof import build_verification_proof, validate_verification_proof
 
 def decision():
+    risk = RiskAssessment(
+        RiskDomain.UNKNOWN,
+        RiskLevel.UNCERTAIN,
+        0.0,
+        RecommendedAction.REVERIFY,
+        ("test decision",),
+        0,
+    )
     return UnifiedVerificationDecision(
-        result="uncertain",
+        result=VerificationResult.UNCERTAIN,
         confidence=0.42,
-        risk="uncertain",
+        risk=risk,
         evidence_graph_digest="abc123",
         independent_source_count=1,
         conflict=False,
         policy_version="2050.1",
-        authority_status="unavailable",
+        authority_status=AuthorityStatus.UNAVAILABLE,
     )
 
 def test_proof_is_deterministic_and_valid():
