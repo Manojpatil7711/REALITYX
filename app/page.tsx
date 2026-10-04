@@ -118,8 +118,11 @@ export default function Home(){
       </div>
     </section>
 
-    <section className="mediaStrip" aria-label="Verification types">
-      {media.map(([name,desc])=><div className="mediaCard" key={name}><span className="mediaDot"/><div><b>{name}</b><small>{desc}</small></div></div>)}
+    <section className="mediaStrip" id="verify-types" aria-label="Verification types">
+      {media.map(([name,desc])=><button className="mediaCard" key={name} type="button" onClick={()=>{document.getElementById("verify")?.scrollIntoView({behavior:"smooth"});inputRef.current?.click()}}>
+        <span className="mediaIcon">{name==="IMAGE"?"◈":name==="VIDEO"?"▶":name==="AUDIO"?"◉":name==="DOCUMENT"?"▤":"⌁"}</span>
+        <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaArrow">→</span>
+      </button>)}
     </section>
 
     <section className="section" id="how">
