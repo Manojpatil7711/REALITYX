@@ -29,6 +29,22 @@ def test_independent_engines_run_concurrently(monkeypatch):
     assert elapsed < 0.09
 
 
+def test_pipeline_assigns_deterministic_evidence_identity(monkeypatch):
+    class IdentityEngine(SignalEngine):
+        name = "identity_test"
+
+        def analyze(self, data, context):
+            return {"status": "available", "summary": "test"}
+
+    monkeypatch.setattr(pipeline, "ENGINE_REGISTRY", (IdentityEngine,))
+    first = pipeline.run_signal_pipeline(b"data", "v1", "s")
+    second = pipeline.run_signal_pipeline(b"data", "v2", "s")
+
+    assert first[0].evidence_id == "identity_test"
+    assert first[0].source_group == "identity_test"
+    assert first[0].evidence_id == second[0].evidence_id
+
+
 def test_fact_engine_is_explicitly_classified():
     class FactEngine(SignalEngine):
         name = "fact_test"

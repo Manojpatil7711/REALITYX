@@ -11,6 +11,7 @@ logger = logging.getLogger("realityx.pipeline")
 def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
     engine = engine_type()
     started = time.perf_counter()
+    evidence_id = engine.name
     try:
         result = engine.analyze(data, context)
         status = SignalStatus(result.get("status", "available"))
@@ -18,6 +19,8 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
         verdict = SignalVerdict(raw_verdict) if raw_verdict is not None else None
         elapsed = (time.perf_counter() - started) * 1000
         evidence = Evidence(
+            evidence_id=evidence_id,
+            source_group=engine.name,
             signal=engine.name,
             status=status,
             kind=EvidenceKind.VERDICT if verdict is not None else EvidenceKind.FACT,
@@ -51,6 +54,8 @@ def _run_engine(engine_type, data: bytes, context: EngineContext) -> Evidence:
             },
         )
         return Evidence(
+            evidence_id=evidence_id,
+            source_group=engine.name,
             signal=engine.name,
             status=SignalStatus.FAILED,
             summary="ही तपासणी सध्या पूर्ण झाली नाही; उपलब्ध पुराव्यावरच निष्कर्ष दिला आहे.",
