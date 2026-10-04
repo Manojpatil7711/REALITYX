@@ -2,7 +2,7 @@ import base64
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from realityx.c2pa import (
+from app.c2pa import (
     ContentCredential,
     CredentialStatus,
     credential_digest,
@@ -11,7 +11,7 @@ from realityx.c2pa import (
     validate_content_credential,
     verify_credential_signature,
 )
-from realityx.contracts import EvidenceKind, SignalStatus
+from app.contracts import EvidenceKind, SignalStatus
 
 
 ARTIFACT = "a" * 64
