@@ -39,6 +39,15 @@ class EvidenceStrength(StrEnum):
     CONFLICTING = "conflicting"
 
 
+class ProfessionalEvidenceStatus(StrEnum):
+    STRONG = "STRONG"
+    MEDIUM = "MEDIUM"
+    WEAK = "WEAK"
+    NEGATIVE = "NEGATIVE"
+    CONFLICTING = "CONFLICTING"
+    NOT_AVAILABLE = "NOT_AVAILABLE"
+
+
 class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
     evidence_id: str = Field(default="")
@@ -96,7 +105,7 @@ class ProfessionalEvidenceItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
     evidence_id: str
     signal: str
-    status: str
+    status: ProfessionalEvidenceStatus
     summary: str
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     engine_version: str | None = None
