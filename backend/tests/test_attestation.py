@@ -1,4 +1,8 @@
-from app.attestation import artifact_digest, artifact_payload, build_artifact, canonical_json, evidence_hash
+from app.attestation import artifact_digest, artifact_payload, build_artifact, canonical_json, evidence_hash, verify_artifact_signature
+from app.key_registry import PublicKeyRecord, registry
+from app.signing import sign_artifact
+import base64
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from app.contracts import Evidence, EvidenceKind, SignalStatus, VerificationResponse, VerificationResult
 
 
@@ -58,3 +62,24 @@ def test_artifact_digest_changes_when_bound_data_changes():
     artifact = build_artifact(response)
     changed = artifact.model_copy(update={"confidence": 0.2})
     assert artifact_digest(artifact) != artifact_digest(changed)
+
+
+def test_signed_artifact_can_be_verified(monkeypatch):
+    registry._keys.clear()
+    private = Ed25519PrivateKey.generate()
+    public_b64 = base64.b64encode(private.public_key().public_bytes_raw()).decode()
+    monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "test-key")
+    monkeypatch.setenv("REALITYX_SIGNING_PRIVATE_KEY_B64", base64.b64encode(private.private_bytes_raw()).decode())
+    registry.register(PublicKeyRecord("test-key", "Ed25519", public_b64, "active", "now"))
+    artifact = build_artifact(VerificationResponse(
+        verification_id="v-verify",
+        sha256="d" * 64,
+        result=VerificationResult.VERIFIED,
+        confidence=0.9,
+        signals=[],
+        evidence=[],
+    ))
+    signed = sign_artifact(artifact)
+    assert verify_artifact_signature(signed) is True
+    tampered = signed.model_copy(update={"confidence": 0.1})
+    assert verify_artifact_signature(tampered) is False
