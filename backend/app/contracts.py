@@ -77,3 +77,8 @@ class VerificationResponse(BaseModel):
     risk_action: str = "reverify"
     risk_confidence: float = 0.0
     risk_reasons: list[str] = Field(default_factory=list)
+    policy_version: str = "2050.1"
+    authority_status: str = "not_required"
+    independent_source_count: int = 0
+    conflict: bool = False
+    evidence_graph_digest: str = Field(default="", pattern=r"^(|[0-9a-f]{64})$")
