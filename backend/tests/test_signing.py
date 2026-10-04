@@ -16,6 +16,7 @@ def artifact():
         result=VerificationResult.UNCERTAIN,
         confidence=0.0,
         evidence_hash="b" * 64,
+        evidence_graph_digest="d" * 64,
     )
 
 
