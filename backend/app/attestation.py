@@ -37,6 +37,8 @@ def artifact_digest(artifact: VerificationArtifact) -> str:
 
 
 def build_artifact(response: VerificationResponse) -> VerificationArtifact:
+    if not response.evidence_graph_digest:
+        raise ValueError("Verification response is missing evidence graph digest")
     return VerificationArtifact(
         verification_id=response.verification_id,
         media_sha256=response.sha256,
@@ -44,6 +46,13 @@ def build_artifact(response: VerificationResponse) -> VerificationArtifact:
         confidence=response.confidence,
         engine_version=response.engine_version,
         evidence_hash=evidence_hash(response.evidence),
+        evidence_graph_digest=response.evidence_graph_digest,
+        policy_version=response.policy_version,
+        risk_domain=response.risk_domain,
+        risk_level=response.risk_level,
+        authority_status=response.authority_status,
+        independent_source_count=response.independent_source_count,
+        conflict=response.conflict,
     )
 
 
