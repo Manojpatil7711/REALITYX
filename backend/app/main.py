@@ -7,7 +7,7 @@ from .receipt_routes import router as receipt_router
 from .operations import router as operations_router
 from .professional_routes import router as professional_router
 from .site_identity import identity_digest, load_site_identity
-from .key_registry import load_env_key
+from .key_registry import load_env_key, registry as key_registry
 
 configure_logging()
 load_env_key()
@@ -44,6 +44,13 @@ def realityx_identity() -> dict[str, object]:
     """Machine-readable public identity; ownership status is fail-closed by default."""
     identity = load_site_identity()
     return {"identity": identity.public_document(), "identity_digest": identity_digest(identity)}
+
+
+@app.get("/.well-known/realityx-keys")
+def realityx_keys() -> dict[str, object]:
+    """Public signing-key document for independent proof verification."""
+    document = key_registry.public_document()
+    return {**document, "document_digest": key_registry.public_document_digest()}
 
 
 @app.get("/health")
