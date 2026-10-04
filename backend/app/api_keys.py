@@ -9,14 +9,11 @@ from datetime import datetime, timezone
 KEY_PREFIX = "rxk_"
 KEY_BYTES = 32
 
-
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
-
 def _digest(secret: str) -> str:
     return hashlib.sha256(secret.encode("utf-8")).hexdigest()
-
 
 @dataclass(frozen=True)
 class ApiKeyRecord:
@@ -31,7 +28,6 @@ class ApiKeyRecord:
         now = now or _utc_now()
         return self.revoked_at is None and (self.expires_at is None or self.expires_at > now)
 
-
 class ApiKeyRegistry:
     """In-memory reference implementation; production storage must persist only digests."""
 
@@ -40,8 +36,6 @@ class ApiKeyRegistry:
 
     def issue(self, scopes: set[str], expires_at: datetime | None = None) -> tuple[str, ApiKeyRecord]:
         normalized_scopes = validate_public_scopes(list(scopes))
-        if not normalized_scopes:
-            raise ValueError("At least one API scope is required")
         if expires_at is not None and expires_at <= _utc_now():
             raise ValueError("API key expiry must be in the future")
         key_id = secrets.token_urlsafe(18)
@@ -58,8 +52,7 @@ class ApiKeyRegistry:
         record = self._records.get(key_id)
         if record is None or not record.active() or required_scope not in record.scopes:
             return None
-        supplied = _digest(secret)
-        if not hmac.compare_digest(supplied, record.secret_digest):
+        if not hmac.compare_digest(_digest(secret), record.secret_digest):
             return None
         return record
 
@@ -67,22 +60,14 @@ class ApiKeyRegistry:
         record = self._records.get(key_id)
         if record is None or record.revoked_at is not None:
             return False
-        self._records[key_id] = ApiKeyRecord(
-            key_id=record.key_id,
-            secret_digest=record.secret_digest,
-            scopes=record.scopes,
-            created_at=record.created_at,
-            expires_at=record.expires_at,
-            revoked_at=_utc_now(),
-        )
+        self._records[key_id] = ApiKeyRecord(record.key_id, record.secret_digest, record.scopes, record.created_at, record.expires_at, _utc_now())
         return True
-
 
 registry = ApiKeyRegistry()
 
-
-PUBLIC_INTEGRATION_SCOPES = frozenset({"verify:image", "receipt:verify", "agent:trust"})
-
+PUBLIC_INTEGRATION_SCOPES = frozenset({
+    "verify:image", "receipt:verify", "agent:trust", "batch:verify", "batch:read",
+})
 
 def validate_public_scopes(scopes: tuple[str, ...] | list[str]) -> tuple[str, ...]:
     """Normalize and fail closed on unknown public-integration scopes."""
@@ -91,7 +76,6 @@ def validate_public_scopes(scopes: tuple[str, ...] | list[str]) -> tuple[str, ..
         raise ValueError("At least one API key scope is required")
     if len(normalized) > 16:
         raise ValueError("Too many API key scopes")
-    unknown = set(normalized) - PUBLIC_INTEGRATION_SCOPES
-    if unknown:
+    if set(normalized) - PUBLIC_INTEGRATION_SCOPES:
         raise ValueError("Unsupported API key scope")
     return normalized
