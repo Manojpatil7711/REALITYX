@@ -85,3 +85,18 @@ def test_rate_limiter_requires_identity():
     limiter = FixedWindowRateLimiter(limit=1, window_seconds=60)
     with pytest.raises(ValueError):
         limiter.check("")
+
+
+def test_webp_riff_without_webp_signature_is_rejected():
+    with pytest.raises(ValueError, match="signature"):
+        security.inspect_image(b"RIFF" + b"\x00" * 32)
+
+
+def test_webp_magic_requires_container_marker():
+    assert security._magic_type(b"RIFF" + b"\x00" * 4 + b"WEBP") == "webp"
+
+
+def test_oversized_pixel_limit_is_independent_of_upload_size(monkeypatch):
+    monkeypatch.setattr(security, "MAX_PIXELS", 16)
+    with pytest.raises(ValueError, match="dimensions"):
+        security.inspect_image(_png((5, 5)))
