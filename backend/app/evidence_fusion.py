@@ -26,10 +26,27 @@ def _verdict_signals(signals: list[Evidence]) -> list[Evidence]:
     ]
 
 
+def _c2pa_integrity_conflict(signals: list[Evidence]) -> bool:
+    """C2PA is provenance evidence, but explicit invalid/conflicting state is security-relevant."""
+    for signal in signals:
+        if not signal.evidence_id.startswith("c2pa:"):
+            continue
+        status = str(signal.details.get("credential_status", "")).lower()
+        if status in {"invalid", "conflicting"} or signal.status is SignalStatus.FAILED:
+            return True
+    return False
+
+
 def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
+    c2pa_conflict = _c2pa_integrity_conflict(signals)
     verdict_signals = _verdict_signals(signals)
     if not verdict_signals:
-        return FusionDecision(VerificationResult.UNCERTAIN, 0.0, signals)
+        return FusionDecision(
+            VerificationResult.UNCERTAIN,
+            0.0,
+            signals,
+            conflict=c2pa_conflict,
+        )
 
     # Provenance is security-critical input. A malformed graph must never turn
     # an untrusted upload into a 500 or an implicit positive/negative verdict.
@@ -60,11 +77,16 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
     coverage = min(1.0, sqrt(independent_count / 3.0))
     confidence = round(max(0.0, min(1.0, support * agreement * coverage)), 4)
 
-    if conflict:
-        # A conflict must remain visibly uncertain and cannot masquerade as
-        # high-certainty proof merely because one side is numerically stronger.
+    if conflict or c2pa_conflict:
+        # Provenance conflicts remain visibly uncertain and never create a verdict.
         confidence = min(confidence, 0.49)
-        return FusionDecision(VerificationResult.UNCERTAIN, confidence, signals, independent_count, True)
+        return FusionDecision(
+            VerificationResult.UNCERTAIN,
+            confidence,
+            signals,
+            independent_count,
+            True,
+        )
     if confidence < 0.70:
         return FusionDecision(VerificationResult.UNCERTAIN, confidence, signals, independent_count, False)
     if negative:
