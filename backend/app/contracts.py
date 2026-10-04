@@ -2,20 +2,19 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .provenance import SourceProvenance
+
 PROTOCOL_VERSION = "1.0"
 ENGINE_VERSION = "0.1.0"
-
 
 class SignalStatus(StrEnum):
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
     FAILED = "failed"
 
-
 class EvidenceKind(StrEnum):
     FACT = "fact"
     VERDICT = "verdict"
-
 
 class SignalVerdict(StrEnum):
     AUTHENTIC = "authentic"
@@ -24,12 +23,10 @@ class SignalVerdict(StrEnum):
     AI_GENERATED = "ai_generated"
     INAUTHENTIC = "inauthentic"
 
-
 class VerificationResult(StrEnum):
     VERIFIED = "verified"
     INAUTHENTIC = "inauthentic"
     UNCERTAIN = "uncertain"
-
 
 class EvidenceStrength(StrEnum):
     STRONG = "strong"
@@ -38,7 +35,6 @@ class EvidenceStrength(StrEnum):
     INSUFFICIENT = "insufficient"
     CONFLICTING = "conflicting"
 
-
 class ProfessionalEvidenceStatus(StrEnum):
     STRONG = "STRONG"
     MEDIUM = "MEDIUM"
@@ -46,7 +42,6 @@ class ProfessionalEvidenceStatus(StrEnum):
     NEGATIVE = "NEGATIVE"
     CONFLICTING = "CONFLICTING"
     NOT_AVAILABLE = "NOT_AVAILABLE"
-
 
 class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -62,9 +57,7 @@ class Evidence(BaseModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     latency_ms: float | None = Field(default=None, ge=0.0)
 
-
 class VerificationArtifact(BaseModel):
-    """Portable, signed-verification-ready receipt; not a legal certification."""
     model_config = ConfigDict(extra="forbid")
     artifact_version: str = "1.1"
     protocol_version: str = PROTOCOL_VERSION
@@ -84,7 +77,6 @@ class VerificationArtifact(BaseModel):
     issuer: str = "REALITYX"
     signature_algorithm: str | None = None
     signature: str | None = None
-
 
 class VerificationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -107,7 +99,6 @@ class VerificationResponse(BaseModel):
     conflict: bool = False
     evidence_graph_digest: str = Field(default="", pattern=r"^(|[0-9a-f]{64})$")
 
-
 class ProfessionalEvidenceItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
     evidence_id: str
@@ -117,7 +108,6 @@ class ProfessionalEvidenceItem(BaseModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     engine_version: str | None = None
     location: str | None = None
-
 
 class ProfessionalVerificationReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -132,6 +122,7 @@ class ProfessionalVerificationReport(BaseModel):
     independent_source_count: int
     conflict: bool
     provenance_status: str
+    source_provenance: SourceProvenance | None = None
     protocol_version: str
     engine_version: str
     policy_version: str
