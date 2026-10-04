@@ -2,8 +2,8 @@ from app.batch_documents import DocumentKind
 from app.document_classification import ClassificationConfidence, classify_document
 
 
-def test_aadhaar_classification_uses_multiple_signals():
-    result = classify_document(filename="customer-001.pdf", extracted_text="Aadhaar UIDAI")
+def test_aadhaar_classification_uses_multiple_sources():
+    result = classify_document(filename="aadhaar-customer-001.pdf", extracted_text="Aadhaar UIDAI")
     assert result.kind is DocumentKind.AADHAAR
     assert result.confidence is ClassificationConfidence.HIGH
 
