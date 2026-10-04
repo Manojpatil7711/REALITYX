@@ -37,8 +37,30 @@ def evaluate_verification(evidence: list[Evidence], *, domain: RiskDomain = Risk
                           fusion_confidence: float = 0.0, fusion_conflict: bool = False,
                           authority_status: AuthorityStatus = AuthorityStatus.NOT_REQUIRED) -> UnifiedVerificationDecision:
     usable = [e for e in evidence if e.status.value == "available" and e.kind.value in {"fact", "verdict"}]
-    graph = EvidenceGraph.from_evidence(usable)
-    independent = len(graph.independent_source_groups(usable))
+    # Provenance is untrusted input. A malformed graph must fail closed rather
+    # than escaping the policy boundary as an internal server error.
+    try:
+        graph = EvidenceGraph.from_evidence(usable)
+        independent = len(graph.independent_source_groups(usable))
+        graph_digest = graph.digest()
+    except ValueError:
+        return UnifiedVerificationDecision(
+            result=VerificationResult.UNCERTAIN,
+            confidence=0.0,
+            risk=RiskAssessment(
+                domain,
+                RiskLevel.UNCERTAIN,
+                0.0,
+                RecommendedAction.REVERIFY,
+                ("Evidence provenance is malformed or inconsistent.",),
+                0,
+            ),
+            evidence_graph_digest="",
+            independent_source_count=0,
+            conflict=False,
+            policy_version=POLICY_VERSION,
+            authority_status=authority_status,
+        )
     risk = assess_risk(usable, domain=domain)
     result, confidence = fusion_result, fusion_confidence
     if risk.level in {RiskLevel.HIGH, RiskLevel.CRITICAL} and independent < 2:
@@ -58,7 +80,7 @@ def evaluate_verification(evidence: list[Evidence], *, domain: RiskDomain = Risk
     if fusion_conflict:
         result, confidence = VerificationResult.UNCERTAIN, min(confidence, 0.49)
     return UnifiedVerificationDecision(result, round(max(0.0, min(1.0, confidence)), 4),
-                                       risk, graph.digest(), independent, fusion_conflict,
+                                       risk, graph_digest, independent, fusion_conflict,
                                        POLICY_VERSION, authority_status)
 
 def determine_originality(*, authoritative_status: AuthorityStatus,
