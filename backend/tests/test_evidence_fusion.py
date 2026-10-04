@@ -102,3 +102,29 @@ def test_malformed_provenance_abstains_instead_of_crashing():
     assert decision.confidence == 0.0
     assert decision.independent_source_count == 0
     assert decision.conflict is False
+
+
+def test_boundary_confidence_below_threshold_abstains():
+    decision = fuse_evidence([signal("authentic", 0.70, name="boundary")])
+    assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.confidence < 0.70
+
+
+def test_three_independent_high_confidence_sources_reach_full_coverage():
+    decision = fuse_evidence([
+        signal("authentic", 0.90, name="a", source_group="a"),
+        signal("authentic", 0.90, name="b", source_group="b"),
+        signal("authentic", 0.90, name="c", source_group="c"),
+    ])
+    assert decision.independent_source_count == 3
+    assert decision.result is VerificationResult.VERIFIED
+    assert decision.confidence == 0.90
+
+
+def test_malformed_cycle_abstains_closed():
+    first = signal("authentic", 0.95, name="a", source_group="a", parents=["b"])
+    second = signal("authentic", 0.95, name="b", source_group="b", parents=[first.evidence_id])
+    decision = fuse_evidence([first, second])
+    assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.confidence == 0.0
+    assert decision.independent_source_count == 0
