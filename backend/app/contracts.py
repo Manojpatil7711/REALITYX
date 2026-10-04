@@ -32,9 +32,9 @@ class VerificationResult(StrEnum):
 
 
 class VerificationArtifact(BaseModel):
-    """Portable, signed-verification-ready receipt; not a legal certification."""
+    """Portable, signed evidence passport; not a legal certification."""
     model_config = ConfigDict(extra="forbid")
-    artifact_version: str = "1.0"
+    artifact_version: str = "1.1"
     protocol_version: str = PROTOCOL_VERSION
     verification_id: str
     media_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -42,6 +42,13 @@ class VerificationArtifact(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     engine_version: str = ENGINE_VERSION
     evidence_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    evidence_graph_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    policy_version: str = "2050.1"
+    risk_domain: str = "unknown"
+    risk_level: str = "uncertain"
+    authority_status: str = "not_required"
+    independent_source_count: int = Field(default=0, ge=0)
+    conflict: bool = False
     issuer: str = "REALITYX"
     signature_algorithm: str | None = None
     signature: str | None = None
