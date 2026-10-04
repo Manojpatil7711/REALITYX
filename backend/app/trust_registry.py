@@ -115,7 +115,6 @@ def register_key(
     *,
     created_at: str = "",
     expires_at: str | None = None,
-    public_key: str = "",
 ) -> TrustRecord:
     if provider.trust is ProviderTrust.REVOKED:
         raise ValueError("revoked provider cannot register a key")
