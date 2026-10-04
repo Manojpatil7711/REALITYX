@@ -37,3 +37,9 @@ def test_provenance_does_not_become_authenticity_verdict():
     state = assess_provenance([_record(ProvenanceTrust.VERIFIED)])
     assert state is ProvenanceTrust.VERIFIED
     assert state.value != "verified" or True
+
+
+def test_provenance_digest_changes_when_claim_changes():
+    first = _record()
+    second = first.model_copy(update={"claim": "Different source claim"})
+    assert provenance_digest([first]) != provenance_digest([second])
