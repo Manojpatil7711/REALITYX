@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from io import BytesIO
 
-import pytest
+from pypdf import PdfWriter
 
 from app.batch_pipeline import (
     PipelineDocument,
@@ -19,13 +20,21 @@ class StubOCR:
         return self.text_by_media_type.get(media_type, "")
 
 
+def _pdf_bytes() -> bytes:
+    output = BytesIO()
+    writer = PdfWriter()
+    writer.add_blank_page(width=300, height=400)
+    writer.write(output)
+    return output.getvalue()
+
+
 def test_groups_aadhaar_and_pan_into_separate_report_slots() -> None:
-    ocr = StubOCR({"application/pdf": "Aadhaar Unique Identity"})
+    ocr = StubOCR({})
     documents = [
         PipelineDocument(
             document_id="aadhaar-1",
             filename="aadhaar.pdf",
-            data=b"%PDF-1.4\n1 0 obj<<>>endobj\n",
+            data=_pdf_bytes(),
             media_type="application/pdf",
             identity=IdentitySignals(name="Ravi Patil", date_of_birth="1990-01-01"),
         ),
@@ -47,10 +56,12 @@ def test_groups_aadhaar_and_pan_into_separate_report_slots() -> None:
     assert customer.pan is not None
     assert customer.aadhaar.document.kind.value == "aadhaar"
     assert customer.pan.document.kind.value == "pan"
+    assert len(customer.aadhaar.pages) == 1
+    assert len(customer.pan.pages) == 1
 
 
 def test_conflicting_dob_keeps_documents_separate() -> None:
-    ocr = StubOCR({"application/pdf": "Aadhaar Unique Identity"})
+    ocr = StubOCR({})
     documents = [
         PipelineDocument(
             document_id="a",
