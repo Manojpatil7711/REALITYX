@@ -8,6 +8,7 @@ from .idempotency import store
 from .pipeline import run_signal_pipeline
 from .evidence_fusion import fuse_evidence
 from .rate_limit import image_verify_limiter
+from .risk_assessment import assess_risk
 from .security import MAX_UPLOAD_BYTES, inspect_image, _magic_type
 from .receipt_store import store as receipt_store
 from .signing import sign_artifact
@@ -68,6 +69,7 @@ async def verify_image(
     verification_id = str(uuid.uuid4())
     signals = await run_in_threadpool(run_signal_pipeline, data, verification_id, fingerprint)
     decision = fuse_evidence(signals)
+    risk = assess_risk(signals)
     response = VerificationResponse(
         verification_id=verification_id,
         sha256=fingerprint,
@@ -75,6 +77,11 @@ async def verify_image(
         confidence=decision.confidence,
         signals=signals,
         evidence=decision.evidence,
+        risk_domain=risk.domain.value,
+        risk_level=risk.level.value,
+        risk_action=risk.action.value,
+        risk_confidence=risk.confidence,
+        risk_reasons=list(risk.reasons),
     )
     store.put(idempotency_key, fingerprint, response.model_dump())
     receipt_store.put(sign_artifact(build_artifact(response)))
