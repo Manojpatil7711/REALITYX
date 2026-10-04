@@ -3,7 +3,7 @@ import base64
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from app.attestation import artifact_digest, canonical_json
+from app.attestation import artifact_digest
 from app.contracts import VerificationArtifact, VerificationResult
 from app.key_registry import PublicKeyRecord, registry
 from app.signing import sign_artifact
@@ -24,10 +24,12 @@ def reset_registry():
     registry._keys.clear()
 
 
-def test_digest_excludes_signature_fields():
+def test_digest_binds_signature_key_identity_but_excludes_signature_bytes():
     original = artifact()
     signed = original.model_copy(update={"signature_algorithm": "Ed25519:k1", "signature": "abc"})
-    assert artifact_digest(original) == artifact_digest(signed)
+    assert artifact_digest(original) != artifact_digest(signed)
+    signed_again = signed.model_copy(update={"signature": "different"})
+    assert artifact_digest(signed) == artifact_digest(signed_again)
 
 
 def test_sign_artifact_with_env_key(monkeypatch):
@@ -43,8 +45,8 @@ def test_sign_artifact_with_env_key(monkeypatch):
     signed = sign_artifact(artifact())
     assert signed.signature_algorithm == "Ed25519:k1"
     assert signed.signature is not None
-    payload = canonical_json(signed.model_dump(mode="json", exclude={"signature", "signature_algorithm"}))
-    private.public_key().verify(base64.b64decode(signed.signature), payload)
+    from app.attestation import artifact_payload
+    private.public_key().verify(base64.b64decode(signed.signature), artifact_payload(signed))
 
 
 def test_sign_artifact_rejects_unregistered_key(monkeypatch):
