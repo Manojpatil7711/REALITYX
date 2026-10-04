@@ -46,7 +46,7 @@ def test_groups_aadhaar_and_pan_into_separate_report_slots() -> None:
     assert customer.aadhaar is not None
     assert customer.pan is not None
     assert customer.aadhaar.document.kind.value == "aadhaar"
-    assert customer.pan.document.kind.value == "aadhaar"  # OCR is deliberately provider output, not filename truth
+    assert customer.pan.document.kind.value == "pan"
 
 
 def test_conflicting_dob_keeps_documents_separate() -> None:
