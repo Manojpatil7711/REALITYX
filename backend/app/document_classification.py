@@ -28,16 +28,12 @@ class DocumentClassification:
     evidence: tuple[ClassificationEvidence, ...] = ()
 
 
-# Strong routing signals. Generic "account number" is weak evidence and cannot
-# create a bank-document route by itself.
 _STRONG_PATTERNS = {
     DocumentKind.AADHAAR: ("aadhaar", "aadhar", "uidai", "unique identity"),
     DocumentKind.PAN: ("pan card", "pan", "income tax department", "permanent account number"),
     DocumentKind.BANK_DOCUMENT: ("bank statement", "account statement", "passbook", "ifsc"),
 }
-_WEAK_PATTERNS = {
-    DocumentKind.BANK_DOCUMENT: ("account number",),
-}
+_WEAK_PATTERNS = {DocumentKind.BANK_DOCUMENT: ("account number",)}
 
 
 def _hits(text: str, patterns: tuple[str, ...]) -> list[str]:
@@ -61,9 +57,6 @@ def classify_document(*, filename: str, extracted_text: str | None = None) -> Do
                 candidates.setdefault(kind, []).extend(
                     ClassificationEvidence("ocr_text", hit) for hit in hits
                 )
-
-        # A generic account-number phrase only enriches an already strong
-        # bank-document classification; it cannot create one.
         bank_strong = bool(_hits(extracted_text, _STRONG_PATTERNS[DocumentKind.BANK_DOCUMENT]))
         if bank_strong:
             candidates.setdefault(DocumentKind.BANK_DOCUMENT, []).extend(
@@ -80,13 +73,12 @@ def classify_document(*, filename: str, extracted_text: str | None = None) -> Do
         )
 
     kind, evidence = next(iter(candidates.items()))
-    distinct_signals = {item.signal for item in evidence}
     sources = {item.source for item in evidence}
-    if len(distinct_signals) >= 2:
-        confidence = ClassificationConfidence.HIGH
-    elif "ocr_text" in sources:
-        confidence = ClassificationConfidence.MEDIUM
-    else:
-        confidence = ClassificationConfidence.LOW
-
+    confidence = (
+        ClassificationConfidence.HIGH
+        if len(sources) >= 2
+        else ClassificationConfidence.MEDIUM
+        if "ocr_text" in sources
+        else ClassificationConfidence.LOW
+    )
     return DocumentClassification(kind, confidence, tuple(evidence))
