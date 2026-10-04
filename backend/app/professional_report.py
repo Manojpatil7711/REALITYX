@@ -4,8 +4,10 @@ from .contracts import (
     Evidence,
     EvidenceStrength,
     ProfessionalEvidenceItem,
+    ProfessionalEvidenceStatus,
     ProfessionalVerificationReport,
     SignalStatus,
+    SignalVerdict,
     VerificationResponse,
     VerificationResult,
 )
@@ -21,6 +23,26 @@ def _strength(response: VerificationResponse) -> EvidenceStrength:
     if response.confidence > 0:
         return EvidenceStrength.WEAK
     return EvidenceStrength.INSUFFICIENT
+
+
+def _evidence_status(item: Evidence, *, conflict: bool) -> ProfessionalEvidenceStatus:
+    if item.status is not SignalStatus.AVAILABLE:
+        return ProfessionalEvidenceStatus.NOT_AVAILABLE
+    if conflict:
+        return ProfessionalEvidenceStatus.CONFLICTING
+    if item.verdict in {
+        SignalVerdict.MANIPULATED,
+        SignalVerdict.AI_GENERATED,
+        SignalVerdict.INAUTHENTIC,
+    }:
+        return ProfessionalEvidenceStatus.NEGATIVE
+    if item.confidence is None or item.confidence <= 0:
+        return ProfessionalEvidenceStatus.WEAK
+    if item.confidence >= 0.85:
+        return ProfessionalEvidenceStatus.STRONG
+    if item.confidence >= 0.70:
+        return ProfessionalEvidenceStatus.MEDIUM
+    return ProfessionalEvidenceStatus.WEAK
 
 
 def _conclusion(response: VerificationResponse) -> str:
@@ -47,7 +69,7 @@ def build_professional_report(response: VerificationResponse) -> ProfessionalVer
         ProfessionalEvidenceItem(
             evidence_id=item.evidence_id,
             signal=item.signal,
-            status=item.status.value,
+            status=_evidence_status(item, conflict=response.conflict),
             summary=item.summary,
             confidence=item.confidence,
             engine_version=response.engine_version,
