@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import base64
 import uuid
 
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from fastapi import APIRouter, HTTPException, Request
 
-from .attestation import artifact_digest, canonical_json
-from .key_registry import registry
+from .attestation import artifact_digest, verify_artifact_signature
 from .rate_limit import receipt_read_limiter, receipt_verify_limiter
 from .receipt_store import store
 
@@ -26,14 +22,17 @@ def _enforce_rate_limit(request: Request, limiter) -> None:
         )
 
 
-@router.get("/{verification_id}")
-def get_receipt(verification_id: str, request: Request) -> dict:
-    _enforce_rate_limit(request, receipt_read_limiter)
-
+def _parse_verification_id(verification_id: str) -> None:
     try:
         uuid.UUID(verification_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="verification_id must be a UUID") from exc
+
+
+@router.get("/{verification_id}")
+def get_receipt(verification_id: str, request: Request) -> dict:
+    _enforce_rate_limit(request, receipt_read_limiter)
+    _parse_verification_id(verification_id)
 
     artifact = store.get(verification_id)
     if artifact is None:
@@ -49,11 +48,7 @@ def get_receipt(verification_id: str, request: Request) -> dict:
 @router.get("/{verification_id}/verify")
 def verify_receipt(verification_id: str, request: Request) -> dict:
     _enforce_rate_limit(request, receipt_verify_limiter)
-
-    try:
-        uuid.UUID(verification_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="verification_id must be a UUID") from exc
+    _parse_verification_id(verification_id)
 
     artifact = store.get(verification_id)
     if artifact is None:
@@ -66,37 +61,14 @@ def verify_receipt(verification_id: str, request: Request) -> dict:
             "reason": "Receipt is not signed",
         }
 
-    try:
-        algorithm, key_id = artifact.signature_algorithm.split(":", 1)
-    except ValueError:
+    if not verify_artifact_signature(artifact):
         return {
             "verification_id": verification_id,
             "valid": False,
-            "reason": "Invalid signature algorithm",
+            "reason": "Signature verification failed or signing key is unavailable",
         }
 
-    record = registry.get(key_id)
-    if record is None or record.algorithm != algorithm or record.status != "active":
-        return {
-            "verification_id": verification_id,
-            "valid": False,
-            "reason": "Signing key is unavailable",
-        }
-
-    try:
-        public_key = base64.b64decode(record.public_key, validate=True)
-        signature = base64.b64decode(artifact.signature, validate=True)
-        Ed25519PublicKey.from_public_bytes(public_key).verify(
-            signature,
-            _unsigned_payload(artifact),
-        )
-    except (ValueError, TypeError, InvalidSignature):
-        return {
-            "verification_id": verification_id,
-            "valid": False,
-            "reason": "Signature verification failed",
-        }
-
+    algorithm, key_id = artifact.signature_algorithm.split(":", 1)
     return {
         "verification_id": verification_id,
         "valid": True,
@@ -104,13 +76,3 @@ def verify_receipt(verification_id: str, request: Request) -> dict:
         "key_id": key_id,
         "receipt_digest": artifact_digest(artifact),
     }
-
-
-def _unsigned_payload(artifact) -> bytes:
-    unsigned = artifact.model_copy(update={"signature": None, "signature_algorithm": None})
-    return canonical_json(
-        unsigned.model_dump(
-            mode="json",
-            exclude={"signature", "signature_algorithm"},
-        )
-    )
