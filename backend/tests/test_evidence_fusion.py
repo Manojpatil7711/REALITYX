@@ -128,3 +128,49 @@ def test_malformed_cycle_abstains_closed():
     assert decision.result is VerificationResult.UNCERTAIN
     assert decision.confidence == 0.0
     assert decision.independent_source_count == 0
+
+def c2pa_fact(status, signal_status=SignalStatus.AVAILABLE):
+    return Evidence(
+        evidence_id="c2pa:manifest-1",
+        source_group="c2pa:issuer",
+        signal="content_credentials",
+        status=signal_status,
+        summary="Content Credential status",
+        kind=EvidenceKind.FACT,
+        details={"credential_status": status},
+    )
+
+
+def test_valid_c2pa_does_not_create_or_inflate_verdict():
+    verdict = signal("authentic", 0.9, name="model")
+    with_c2pa = fuse_evidence([verdict, c2pa_fact("trusted")])
+    without_c2pa = fuse_evidence([verdict])
+    assert with_c2pa.result is without_c2pa.result
+    assert with_c2pa.confidence == without_c2pa.confidence
+
+
+def test_invalid_c2pa_forces_uncertainty():
+    decision = fuse_evidence([
+        signal("authentic", 0.99, name="model", source_group="model"),
+        c2pa_fact("invalid", SignalStatus.FAILED),
+    ])
+    assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.conflict is True
+    assert decision.confidence <= 0.49
+
+
+def test_conflicting_c2pa_forces_uncertainty():
+    decision = fuse_evidence([
+        signal("inauthentic", 0.99, name="forensic", source_group="forensic"),
+        c2pa_fact("conflicting", SignalStatus.FAILED),
+    ])
+    assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.conflict is True
+    assert decision.confidence <= 0.49
+
+
+def test_c2pa_conflict_without_verdict_still_abstains_explicitly():
+    decision = fuse_evidence([c2pa_fact("invalid", SignalStatus.FAILED)])
+    assert decision.result is VerificationResult.UNCERTAIN
+    assert decision.conflict is True
+    assert decision.confidence == 0.0
