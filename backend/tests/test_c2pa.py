@@ -7,9 +7,11 @@ from realityx.c2pa import (
     CredentialStatus,
     credential_digest,
     credential_signing_payload,
+    credential_to_evidence,
     validate_content_credential,
     verify_credential_signature,
 )
+from realityx.contracts import EvidenceKind, SignalStatus
 
 
 ARTIFACT = "a" * 64
@@ -93,3 +95,23 @@ def test_unsupported_algorithm_fails_closed():
     unsupported = signed.model_copy(update={"signature_algorithm": "rsa"})
     public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode("ascii")
     assert verify_credential_signature(unsupported, public_key_b64=public_key) is False
+
+
+def test_c2pa_maps_to_fact_not_verdict():
+    evidence = credential_to_evidence(
+        credential(), artifact_sha256=ARTIFACT, status=CredentialStatus.TRUSTED,
+        signature_valid=True,
+    )
+    assert evidence.kind is EvidenceKind.FACT
+    assert evidence.verdict is None
+    assert evidence.status is SignalStatus.AVAILABLE
+
+
+def test_invalid_c2pa_is_failed_evidence():
+    evidence = credential_to_evidence(
+        credential(artifact_sha256="b" * 64), artifact_sha256=ARTIFACT,
+        status=CredentialStatus.INVALID,
+    )
+    assert evidence.kind is EvidenceKind.FACT
+    assert evidence.verdict is None
+    assert evidence.status is SignalStatus.FAILED
