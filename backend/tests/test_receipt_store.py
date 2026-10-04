@@ -1,6 +1,6 @@
 import pytest
 
-from app.contracts import VerificationArtifact
+from app.contracts import VerificationArtifact, VerificationResult
 from app.receipt_store import ReceiptStore
 
 
@@ -9,7 +9,7 @@ def _artifact(verification_id: str) -> VerificationArtifact:
         verification_id=verification_id,
         media_sha256="a" * 64,
         evidence_hash="b" * 64,
-        result="UNCERTAIN",
+        result=VerificationResult.UNCERTAIN,
         confidence=0.0,
     )
 
@@ -37,8 +37,8 @@ def test_receipt_store_returns_isolated_copy():
 
     returned = store.get("one")
     assert returned is not None
-    returned.result = "VERIFIED"
+    returned.result = VerificationResult.VERIFIED
 
     stored_again = store.get("one")
     assert stored_again is not None
-    assert stored_again.result == "UNCERTAIN"
+    assert stored_again.result == VerificationResult.UNCERTAIN
