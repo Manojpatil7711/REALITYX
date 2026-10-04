@@ -27,8 +27,11 @@ const copy: Record<string,{eyebrow:string;title:string;lead:string;verify:string
 };
 
 const media = [
-  ["IMAGE","Photos · edits · provenance"],["VIDEO","Frames · deepfake signals"],["AUDIO","Voice · synthetic signals"],
-  ["DOCUMENT","Structure · signatures"],["URL","Source · domain context"],
+  ["IMAGE","Photos · edits · provenance","available"],
+  ["VIDEO","Frames · deepfake signals","planned"],
+  ["AUDIO","Voice · synthetic signals","planned"],
+  ["DOCUMENT","Aadhaar · PAN · Passport · Visa","planned"],
+  ["URL","Source · domain context","planned"],
 ];
 
 const principles = [
@@ -58,7 +61,7 @@ export default function Home(){
   const t=copy[lang]||copy.en;
 
   function selectFile(file?:File){
-    if(!file || !file.type.startsWith("image/")) return;
+    if(!file || !["image/jpeg","image/png","image/webp"].includes(file.type)) return;
     const dt=new DataTransfer(); dt.items.add(file);
     if(inputRef.current) inputRef.current.files=dt.files;
     setFileName(file.name); setResult(null); setError("");
@@ -101,8 +104,8 @@ export default function Home(){
       <div className="verifyCard">
         <div className="drop" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inputRef.current?.click()}}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();selectFile(e.dataTransfer.files?.[0])}} onClick={()=>inputRef.current?.click()}>
           <div className="uploadIcon">↑</div>
-          <h2>{checking?(stage||"Verifying…"):"Drop an image to verify"}</h2>
-          <p>JPG, PNG or WebP · secure verification path</p>
+          <h2>{checking?(stage||"Verifying…"):"Choose evidence to verify"}</h2>
+          <p>Images now supported · PDF, video, audio, ZIP and folder workflows are added as production modules</p>
           <input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>selectFile(e.target.files?.[0])}/>
           {fileName&&<div className="filename">{fileName}</div>}
         </div>
@@ -119,9 +122,9 @@ export default function Home(){
     </section>
 
     <section className="mediaStrip" id="verify-types" aria-label="Verification types">
-      {media.map(([name,desc])=><button className="mediaCard" key={name} type="button" onClick={()=>{document.getElementById("verify")?.scrollIntoView({behavior:"smooth"});inputRef.current?.click()}}>
+      {media.map(([name,desc,status])=><button className="mediaCard" key={name} type="button" disabled={status!=="available"} aria-label={status==="available"?`Verify ${name}`:`${name} verification planned`} onClick={()=>{if(status==="available"){document.getElementById("verify")?.scrollIntoView({behavior:"smooth"});inputRef.current?.click()}}}>
         <span className="mediaIcon">{name==="IMAGE"?"◈":name==="VIDEO"?"▶":name==="AUDIO"?"◉":name==="DOCUMENT"?"▤":"⌁"}</span>
-        <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaArrow">→</span>
+        <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaStatus">{status==="available"?"AVAILABLE":"PLANNED"}</span><span className="mediaArrow">→</span>
       </button>)}
     </section>
 
