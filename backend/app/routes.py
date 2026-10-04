@@ -12,6 +12,7 @@ from .risk_assessment import assess_risk
 from .verification_policy import evaluate_verification
 from .security import MAX_UPLOAD_BYTES, inspect_image, _magic_type
 from .receipt_store import store as receipt_store
+from .professional_store import store as professional_store
 from .signing import sign_artifact
 
 router = APIRouter()
@@ -106,6 +107,7 @@ async def verify_image(
             evidence_graph_digest=unified.evidence_graph_digest,
         )
         receipt_store.put(sign_artifact(build_artifact(response)))
+        professional_store.put(response)
         store.put(idempotency_key, fingerprint, response.model_dump())
         return response
     except Exception:
