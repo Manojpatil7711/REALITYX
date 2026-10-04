@@ -5,17 +5,31 @@ import uuid
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from .attestation import artifact_digest, canonical_json
 from .key_registry import registry
+from .rate_limit import receipt_read_limiter, receipt_verify_limiter
 from .receipt_store import store
 
 router = APIRouter(prefix="/receipts")
 
 
+def _enforce_rate_limit(request: Request, limiter) -> None:
+    identity = request.client.host if request.client else "unknown"
+    decision = limiter.check(identity)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded",
+            headers={"Retry-After": str(decision.retry_after_seconds)},
+        )
+
+
 @router.get("/{verification_id}")
-def get_receipt(verification_id: str) -> dict:
+def get_receipt(verification_id: str, request: Request) -> dict:
+    _enforce_rate_limit(request, receipt_read_limiter)
+
     try:
         uuid.UUID(verification_id)
     except ValueError as exc:
@@ -33,7 +47,9 @@ def get_receipt(verification_id: str) -> dict:
 
 
 @router.get("/{verification_id}/verify")
-def verify_receipt(verification_id: str) -> dict:
+def verify_receipt(verification_id: str, request: Request) -> dict:
+    _enforce_rate_limit(request, receipt_verify_limiter)
+
     try:
         uuid.UUID(verification_id)
     except ValueError as exc:
