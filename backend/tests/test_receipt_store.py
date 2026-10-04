@@ -9,6 +9,7 @@ def _artifact(verification_id: str) -> VerificationArtifact:
         verification_id=verification_id,
         media_sha256="a" * 64,
         evidence_hash="b" * 64,
+        evidence_graph_digest="d" * 64,
         result=VerificationResult.UNCERTAIN,
         confidence=0.0,
     )
