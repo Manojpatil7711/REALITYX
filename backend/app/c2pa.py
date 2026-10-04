@@ -14,6 +14,7 @@ from hashlib import sha256
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .attestation import canonical_json
+from .contracts import Evidence, EvidenceKind, SignalStatus
 
 
 class CredentialStatus(StrEnum):
@@ -46,7 +47,6 @@ def credential_digest(credential: ContentCredential) -> str:
 
 
 def credential_signing_payload(credential: ContentCredential) -> bytes:
-    """Canonical bytes covered by the credential signature."""
     data = credential.model_dump(mode="json")
     data.pop("signature")
     return canonical_json(data).encode("utf-8")
@@ -57,7 +57,6 @@ def verify_credential_signature(
     *,
     public_key_b64: str,
 ) -> bool:
-    """Verify the supported credential signature without assigning issuer trust."""
     if credential.signature_algorithm != "ed25519":
         return False
     try:
@@ -92,3 +91,35 @@ def validate_content_credential(
     if not trusted_issuer:
         return CredentialStatus.VALID
     return CredentialStatus.TRUSTED
+
+
+def credential_to_evidence(
+    credential: ContentCredential,
+    *,
+    artifact_sha256: str,
+    status: CredentialStatus,
+    signature_valid: bool | None = None,
+) -> Evidence:
+    """Expose C2PA as provenance evidence, never as an authenticity verdict."""
+    if status in {CredentialStatus.INVALID, CredentialStatus.CONFLICTING}:
+        signal_status = SignalStatus.FAILED
+    else:
+        signal_status = SignalStatus.AVAILABLE
+
+    return Evidence(
+        evidence_id=f"c2pa:{credential.manifest_id}",
+        source_group=f"c2pa:{credential.issuer}",
+        signal="content_credentials",
+        status=signal_status,
+        kind=EvidenceKind.FACT,
+        summary=f"Content Credential status: {status.value}",
+        details={
+            "manifest_id": credential.manifest_id,
+            "issuer": credential.issuer,
+            "artifact_sha256": credential.artifact_sha256,
+            "credential_digest": credential_digest(credential),
+            "credential_status": status.value,
+            "signature_valid": signature_valid,
+            "artifact_bound": credential.artifact_sha256 == artifact_sha256,
+        },
+    )
