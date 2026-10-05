@@ -26,12 +26,12 @@ MEDIA_FORMATS = {"pdf", "zip", "mp4", "mov", "webm", "mp3", "wav", "flac", "ogg"
 def _media_format(data: bytes) -> str | None:
     if data.startswith(b"%PDF-"):
         return "pdf"
-    if data.startswith((b"PK\\x03\\x04", b"PK\\x05\\x06", b"PK\\x07\\x08")):
+    if data.startswith((b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")):
         return "zip"
     if len(data) >= 12 and data[4:8] == b"ftyp":
         major_brand = data[8:12]
         return "mov" if major_brand in {b"qt  "} else "mp4"
-    if data.startswith(b"\\x1a\\x45\\xdf\\xa3"):
+    if data.startswith(b"\x1a\x45\xdf\xa3"):
         return "webm"
     if data.startswith(b"ID3") or (len(data) >= 2 and data[0] == 0xFF and (data[1] & 0xE0) == 0xE0):
         return "mp3"
