@@ -104,7 +104,7 @@ def group_document_identities(
         for group in groups:
             candidates = [signals_by_id[item] for item in group]
             matches = [match_identity(signals, candidate) for candidate in candidates]
-            if any(match.matched and match.confidence == "high" for match in matches):
+            if any(match.matched and match.confidence in {"high", "medium"} for match in matches):
                 group.append(document_id)
                 placed = True
                 break
