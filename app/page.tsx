@@ -41,6 +41,12 @@ const media = [
   ["DOCUMENT","Aadhaar · PAN · Passport · Visa","planned"],
   ["URL","Source · domain context","planned"],
 ];
+const mediaCopy:Record<string,Record<string,string>>={
+ en:{IMAGE:"Photos · edits · provenance",VIDEO:"Frames · deepfake signals",AUDIO:"Voice · synthetic signals",DOCUMENT:"Aadhaar · PAN · Passport · Visa",URL:"Source · domain context",available:"AVAILABLE",planned:"NOT CONNECTED",types:"Verification types"},
+ hi:{IMAGE:"फ़ोटो · एडिट · प्रोवेनेंस",VIDEO:"फ़्रेम · डीपफेक संकेत",AUDIO:"आवाज़ · सिंथेटिक संकेत",DOCUMENT:"आधार · PAN · पासपोर्ट · वीज़ा",URL:"स्रोत · डोमेन संदर्भ",available:"उपलब्ध",planned:"कनेक्ट नहीं है",types:"सत्यापन प्रकार"},
+ mr:{IMAGE:"फोटो · एडिट · प्रोव्हेनन्स",VIDEO:"फ्रेम · डीपफेक संकेत",AUDIO:"आवाज · सिंथेटिक संकेत",DOCUMENT:"आधार · PAN · पासपोर्ट · व्हिसा",URL:"स्रोत · डोमेन संदर्भ",available:"उपलब्ध",planned:"कनेक्ट केलेले नाही",types:"सत्यापन प्रकार"}
+};
+function mc(lang:string,key:string){return mediaCopy[lang]?.[key]||mediaCopy.en[key]||key;}
 
 const principles = [
   ["01","FAST SCAN","Integrity, hash and basic signals first."],
@@ -255,10 +261,10 @@ export default function Home(){
       </div>
     </section>
 
-    <section className="mediaStrip" id="verify-types" aria-label="Verification types">
+    <section className="mediaStrip" id="verify-types" aria-label={mc(lang,"types")}>
       {media.map(([name,desc,status])=><button className="mediaCard" key={name} type="button" disabled={status!=="available"} aria-label={status==="available"?`Verify ${name}`:`${name} verification is not connected`} onClick={()=>{if(status==="available")inputRef.current?.click()}}>
         <span className="mediaIcon">{name==="IMAGE"?"◈":name==="VIDEO"?"▶":name==="AUDIO"?"◉":name==="DOCUMENT"?"▤":"⌁"}</span>
-        <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaStatus">{status==="available"?"AVAILABLE":"NOT CONNECTED"}</span><span className="mediaArrow">→</span>
+        <span className="mediaCopy"><b>{name}</b><small>{mc(lang,name)}</small></span><span className="mediaStatus">{mc(lang,status)}</span><span className="mediaArrow">→</span>
       </button>)}
     </section>
 
