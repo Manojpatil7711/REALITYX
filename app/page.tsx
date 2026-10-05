@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const languages = [
   ["en","English"],["hi","हिन्दी"],["mr","मराठी"],["es","Español"],["fr","Français"],
@@ -178,7 +178,7 @@ export default function Home(){
       <div className="eyebrow">{t.eyebrow}</div>
       <h1>{t.title}</h1>
       <p className="lead">{t.lead}</p>
-      <div className="heroTrust"><span>● Evidence-first</span><span>● Privacy-minded</span><span>● Provider-neutral</span><span>● No forced certainty</span></div>
+      <div className="heroTrust"><span>● {lang==="hi"?"साक्ष्य पहले":lang==="mr"?"पुरावा प्रथम":lang==="ar"?"الدليل أولاً":lang==="ja"?"証拠を優先":lang==="ko"?"증거 우선":lang==="zh"?"证据优先":"Evidence-first"}</span><span>● {lang==="hi"?"गोपनीयता":lang==="mr"?"गोपनीयता":lang==="ar"?"الخصوصية":lang==="ja"?"プライバシー重視":lang==="ko"?"개인정보 보호":lang==="zh"?"隐私优先":"Privacy-minded"}</span><span>● {lang==="hi"?"प्रदाता-निरपेक्ष":lang==="mr"?"प्रदाता-निरपेक्ष":lang==="ar"?"محايد تجاه المزوّد":lang==="ja"?"プロバイダー中立":lang==="ko"?"제공자 중립":"Provider-neutral"}</span><span>● {lang==="hi"?"बिना जबरन निश्चितता":lang==="mr"?"जबरदस्तीची खात्री नाही":lang==="ar"?"دون يقين قسري":lang==="ja"?"断定を強制しない":lang==="ko"?"강제 확정 없음":"No forced certainty"}</span></div>
 
       <div className="verifyCard">
         <div className="drop" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inputRef.current?.click()}}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files)}} onClick={()=>inputRef.current?.click()}>
