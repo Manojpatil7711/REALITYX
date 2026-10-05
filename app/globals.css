@@ -83,7 +83,7 @@ footer{max-width:1240px;margin:auto;padding:28px 24px 40px;border-top:1px solid 
 @media(max-width:600px){.trustResultHeader{align-items:flex-start}.resultGrid{grid-template-columns:1fr 1fr}.resultActions{grid-template-columns:1fr}.receiptTitle{align-items:flex-start;flex-direction:column}}
 
 
-.evidenceList{margin-top:10px;border-top:1px solid #1b2a21;padding-top:9px;display:grid;gap:7px}
+.resultMeta{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;color:#b9bec8;font-size:12px}.resultMeta span{padding:7px 10px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.025)}.resultMeta b{color:#f1f3f6}.limitations{margin:14px 0;padding:13px 14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.02);color:#c8ccd3;font-size:12px}.limitations>b{color:#f1f3f6}.limitations ul{margin:8px 0 0 18px;padding:0}.limitations li{margin:5px 0}.evidenceList{margin-top:10px;border-top:1px solid #1b2a21;padding-top:9px;display:grid;gap:7px}
 .evidenceItem{display:flex;justify-content:space-between;gap:12px;padding:9px;border:1px solid #1c292f;border-radius:9px;background:#080d10}
 .evidenceItem b{display:block;font-size:10px;color:#dce7e1}
 .evidenceItem small{display:block;margin-top:3px;color:#74838a;font-size:9px;line-height:1.45}
