@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from hashlib import sha256
-import json
 
 
 @dataclass(frozen=True)
@@ -95,10 +94,18 @@ def load_env_key() -> None:
             raise ValueError("Ed25519 public key must be 32 bytes")
     except (ValueError, TypeError) as exc:
         raise RuntimeError("Invalid REALITYX Ed25519 public key") from exc
+
+    # Trust documents are externally consumed, so the key creation timestamp
+    # must not change on every process restart. Require an explicit deployment
+    # value for durable trust/audit semantics.
+    created_at = os.getenv("REALITYX_SIGNING_KEY_CREATED_AT")
+    if not created_at:
+        raise RuntimeError("REALITYX_SIGNING_KEY_CREATED_AT is required for a stable trust document")
+
     registry.register(PublicKeyRecord(
         key_id=key_id,
         algorithm="Ed25519",
         public_key=public_key,
         status="active",
-        created_at=datetime.now(timezone.utc).isoformat(),
+        created_at=created_at,
     ))
