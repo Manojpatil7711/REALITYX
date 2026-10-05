@@ -79,13 +79,18 @@ class EvidenceGraph:
             groups.update(self._root_groups(item))
         return groups
 
-    def digest(self) -> str:
+    @staticmethod
+    def digest_evidence(evidence: list[Evidence]) -> str:
+        """Deterministically identify an evidence set without validating its graph."""
         payload = [
             item.model_dump(mode="json", exclude_none=True)
-            for item in sorted(self._evidence, key=lambda x: x.evidence_id)
+            for item in sorted(evidence, key=lambda x: x.evidence_id)
         ]
         canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(canonical).hexdigest()
+
+    def digest(self) -> str:
+        return self.digest_evidence(list(self._evidence))
 
 
 def analyze_evidence_graph(evidence: list[Evidence]) -> EvidenceGraphAnalysis:
