@@ -23,3 +23,22 @@ def test_conflicting_dob_does_not_merge():
     ]
     groups = group_document_identities(docs)
     assert all(set(group.document_ids) != {"a", "b"} for group in groups)
+
+
+def test_provider_opaque_identity_evidence_can_support_grouping():
+    docs = [
+        ("a", IdentitySignals(opaque_identity_key="provider-token-1")),
+        ("b", IdentitySignals(opaque_identity_key="provider-token-1")),
+    ]
+    groups = group_document_identities(docs)
+    assert any(set(group.document_ids) == {"a", "b"} for group in groups)
+
+
+def test_opaque_identity_evidence_is_not_exposed_as_a_reason_value():
+    docs = [
+        ("a", IdentitySignals(opaque_identity_key="secret-token")),
+        ("b", IdentitySignals(opaque_identity_key="secret-token")),
+    ]
+    groups = group_document_identities(docs)
+    assert len(groups) == 1
+    assert "secret-token" not in repr(groups[0])
