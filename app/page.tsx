@@ -75,6 +75,8 @@ export default function Home(){
     const valid=incoming.filter(file=>accepted.includes(file.type)||/\.(pdf|png|jpe?g|webp|mp4|mov|webm|mp3|wav|m4a|zip)$/i.test(file.name));
     if(!valid.length){setError("No supported evidence files were selected.");return}
     setFiles(valid);setResult(null);setError("");
+    // One-action UX: a single supported image starts verification immediately.
+    if(valid.length===1&&["image/jpeg","image/png","image/webp"].includes(valid[0].type)) void verifyFile(valid[0]);
   }
 
   function selectFile(file?:File){
@@ -116,12 +118,8 @@ export default function Home(){
     window.print();
   }
 
-  async function verify(){
-    const file=imageFile();
-    if(!file){
-      setError("This evidence type is not connected to the live verification engine yet.");
-      return;
-    }
+  async function verifyFile(file:File){
+    
     setChecking(true);setStage("Preparing secure verification…");setError("");setResult(null);
     try{
       const apiBase=process.env.NEXT_PUBLIC_REALITYX_API_URL;
