@@ -155,7 +155,8 @@ export default function Home(){
 
       const form=new FormData();form.append("file",file);
       setStage("Checking integrity and evidence…");
-      const response=await fetch(`${apiBase.replace(/\/$/,"")}/v1/verify/image`,{method:"POST",headers:{"Idempotency-Key":crypto.randomUUID()},body:form});
+      const endpoint=["image/jpeg","image/png","image/webp"].includes(file.type)?"/v1/verify/image":"/v1/verify/media";
+      const response=await fetch(`${apiBase.replace(/\/$/,"")}${endpoint}`,{method:"POST",headers:{"Idempotency-Key":crypto.randomUUID()},body:form});
       const body=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(body.detail||"Verification could not be completed.");
       setStage("Finalizing decision…");
@@ -218,7 +219,7 @@ export default function Home(){
         {files.length>0&&<div className="intakeSummary" aria-live="polite">
           {imageCount>0&&<span>IMAGE {imageCount}</span>}{pdfCount>0&&<span>PDF {pdfCount}</span>}{videoCount>0&&<span>VIDEO {videoCount}</span>}{audioCount>0&&<span>AUDIO {audioCount}</span>}{zipCount>0&&<span>ZIP {zipCount}</span>}
         </div>}
-        <button className="primary" onClick={()=>{const file=imageFile();if(file) void verifyFile(file);else setError("This evidence type is not connected to the live verification engine yet.");}} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
+        <button className="primary" onClick={()=>{const file=selectedEvidenceFile();if(file) void verifyFile(file);else setError("Choose evidence to verify.");}} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
         {error&&<div className="verifyError" role="alert">{error}</div>}
         {result&&(()=>{
           const verdict=(result.result??"UNCERTAIN").toUpperCase();
