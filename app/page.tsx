@@ -50,7 +50,7 @@ const trust = [
 
 const accepted = ["image/jpeg","image/png","image/webp","application/pdf","video/mp4","video/quicktime","video/webm","audio/mpeg","audio/wav","audio/x-wav","audio/mp4","audio/x-m4a","application/zip"];
 type Result = {
-  verification_id?:string; sha256?:string; result?:string; confidence?:number;
+  verification_id?:string; sha256?:string; result?:string; confidence?:number; signals?:Array<{evidence_id?:string;signal?:string;status?:string;summary?:string;confidence?:number;engine_version?:string}>; evidence?:Array<{evidence_id?:string;signal?:string;status?:string;summary?:string;confidence?:number;engine_version?:string}>;
   document_type?:string; authority_status?:string; risk_level?:string;
   evidence_graph_digest?:string; receipt_digest?:string; cryptographic_valid?:boolean;
   independent_source_count?:number; conflict?:boolean; copy_status?:string;
@@ -195,6 +195,16 @@ export default function Home(){
               <div><small>Conflict</small><b>{result.conflict?"Detected":"None detected"}</b></div>
             </div>
             <div id="evidence-summary" className="evidenceNote"><span>✓</span><div><b>Evidence reviewed</b><small>Confidence is shown transparently. Uncertainty is never hidden.</small></div></div>
+            {(()=>{
+              const items=(result.evidence?.length?result.evidence:result.signals)||[];
+              if(!items.length) return null;
+              return <div className="evidenceList" aria-label="Evidence details">
+                {items.slice(0,12).map((item,index)=><div className="evidenceItem" key={item.evidence_id||index}>
+                  <div><b>{item.signal||"Evidence signal"}</b><small>{item.summary||"No summary supplied."}</small></div>
+                  <span>{item.status||"available"}{typeof item.confidence==="number"?" · "+Math.round(item.confidence*100)+"%":""}</span>
+                </div>)}
+              </div>;
+            })()}
             <div className="receipt">
               <div className="receiptTitle"><span>REALITYX TRUST RECEIPT</span>{result.cryptographic_valid&&<b>✓ Cryptographically valid</b>}</div>
               {result.verification_id&&<div><small>Verification ID</small><code>{result.verification_id}</code></div>}
