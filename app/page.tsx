@@ -53,6 +53,7 @@ type Result = {
   verification_id?:string; sha256?:string; result?:string; confidence?:number; signals?:Array<{evidence_id?:string;signal?:string;status?:string;summary?:string;confidence?:number;engine_version?:string}>; evidence?:Array<{evidence_id?:string;signal?:string;status?:string;summary?:string;confidence?:number;engine_version?:string}>;
   document_type?:string; authority_status?:string; risk_level?:string;
   evidence_graph_digest?:string; receipt_digest?:string; cryptographic_valid?:boolean;
+  conclusion?:string; limitations?:string[]; evidence_strength?:string; provenance_status?:string;
   independent_source_count?:number; conflict?:boolean; copy_status?:string;
 };
 
@@ -130,7 +131,23 @@ export default function Home(){
       const response=await fetch(`${apiBase.replace(/\/$/,"")}/v1/verify/image`,{method:"POST",headers:{"Idempotency-Key":crypto.randomUUID()},body:form});
       const body=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(body.detail||"Verification could not be completed.");
-      setStage("Finalizing decision…");setResult(body);
+      setStage("Finalizing decision…");
+      let enriched:Result=body;
+      if(body.verification_id){
+        try{
+          const reportResponse=await fetch(apiBase.replace(/\/$/,"")+"/v1/professional/reports/"+encodeURIComponent(body.verification_id),{cache:"no-store"});
+          if(reportResponse.ok){
+            const reportBody=await reportResponse.json().catch(()=>({}));
+            const report=reportBody?.report;
+            if(report){
+              enriched={...body,conclusion:report.conclusion,limitations:report.limitations,evidence_strength:report.evidence_strength,provenance_status:report.provenance_status};
+            }
+          }
+        }catch{
+          // Core verification remains authoritative if the optional report is unavailable.
+        }
+      }
+      setResult(enriched);
     }catch(err){setError(err instanceof Error?err.message:"Verification could not be completed.")}
     finally{setChecking(false);setStage("")}
   }
@@ -185,7 +202,13 @@ export default function Home(){
               <div className="trustVerdict"><span className="statusDot"/><b>{label}</b></div>
               {typeof result.confidence==="number"&&<div className="confidence"><strong>{Math.round(result.confidence*100)}%</strong><span>confidence</span></div>}
             </div>
-            <p className="trustSummary">{tone==="verified"?"Available evidence supports this result.":tone==="inauthentic"?"Available evidence indicates authenticity concerns.":"Evidence is not strong enough for a reliable yes/no decision."}</p>
+            <p className="trustSummary">{result.conclusion||(
+              tone==="verified"?"Available evidence supports this result.":tone==="inauthentic"?"Available evidence indicates authenticity concerns.":"Evidence is not strong enough for a reliable yes/no decision."
+            )}</p>
+            {(result.evidence_strength||result.provenance_status)&&<div className="resultMeta">
+              {result.evidence_strength&&<span>Evidence strength: <b>{result.evidence_strength.replaceAll("_"," ")}</b></span>}
+              {result.provenance_status&&<span>Provenance: <b>{result.provenance_status.replaceAll("_"," ")}</b></span>}
+            </div>}
             <div className="resultGrid">
               {result.document_type&&<div><small>Document type</small><b>{result.document_type}</b></div>}
               {result.copy_status&&<div><small>Copy / Xerox</small><b>{result.copy_status.replaceAll("_"," ")}</b></div>}
@@ -205,6 +228,10 @@ export default function Home(){
                 </div>)}
               </div>;
             })()}
+            {result.limitations?.length&&<div className="limitations">
+              <b>Scope & limitations</b>
+              <ul>{result.limitations.slice(0,4).map((item,index)=><li key={index}>{item}</li>)}</ul>
+            </div>}
             <div className="receipt">
               <div className="receiptTitle"><span>REALITYX TRUST RECEIPT</span>{result.cryptographic_valid&&<b>✓ Cryptographically valid</b>}</div>
               {result.verification_id&&<div><small>Verification ID</small><code>{result.verification_id}</code></div>}
