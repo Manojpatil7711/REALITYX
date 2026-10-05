@@ -74,7 +74,7 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
             signals,
             independent_source_count=0,
             conflict=False,
-            evidence_graph_digest=graph.digest(),
+            evidence_graph_digest=_safe_evidence_graph_digest(signals),
         )
 
     independent_count = len(groups)
