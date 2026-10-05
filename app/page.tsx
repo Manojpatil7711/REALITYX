@@ -122,8 +122,11 @@ export default function Home(){
     
     setChecking(true);setStage("Preparing secure verification…");setError("");setResult(null);
     try{
-      const apiBase=process.env.NEXT_PUBLIC_REALITYX_API_URL;
-      if(!apiBase) throw new Error("Verification service is not connected yet.");
+      const configuredApiBase=process.env.NEXT_PUBLIC_REALITYX_API_URL;
+      // Prefer an explicitly configured backend, but keep the public Vercel app functional
+      // when that variable is absent by using the same-origin backend rewrite.
+      const apiBase=configuredApiBase?.replace(/\/$/,"")||`${window.location.origin}/api`;
+
       const form=new FormData();form.append("file",file);
       setStage("Checking integrity and evidence…");
       const response=await fetch(`${apiBase.replace(/\/$/,"")}/v1/verify/image`,{method:"POST",headers:{"Idempotency-Key":crypto.randomUUID()},body:form});
