@@ -7,6 +7,16 @@ from .contracts import Evidence, EvidenceKind, SignalStatus, SignalVerdict, Veri
 from .evidence_graph import EvidenceGraph
 
 
+def _safe_evidence_graph_digest(signals: list[Evidence]) -> str:
+    """Return the deterministic evidence digest even when provenance is malformed."""
+    if not signals:
+        return ""
+    try:
+        return EvidenceGraph.from_evidence(signals).digest()
+    except ValueError:
+        return EvidenceGraph.digest_evidence(signals)
+
+
 @dataclass(frozen=True)
 class FusionDecision:
     result: VerificationResult
@@ -47,7 +57,7 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
             0.0,
             signals,
             conflict=c2pa_conflict,
-            evidence_graph_digest=EvidenceGraph.from_evidence(signals).digest() if signals else "",
+            evidence_graph_digest=_safe_evidence_graph_digest(signals),
         )
 
     # Provenance is security-critical input. A malformed graph must never turn
@@ -62,7 +72,7 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
             signals,
             independent_source_count=0,
             conflict=False,
-            evidence_graph_digest=EvidenceGraph.from_evidence(signals).digest() if signals else "",
+            evidence_graph_digest=_safe_evidence_graph_digest(signals),
         )
 
     independent_count = len(groups)
@@ -94,5 +104,5 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
     if confidence < 0.70:
         return FusionDecision(VerificationResult.UNCERTAIN, confidence, signals, independent_count, False, graph.digest())
     if negative:
-        return FusionDecision(VerificationResult.INAUTHENTIC, confidence, signals, independent_count, False)
+        return FusionDecision(VerificationResult.INAUTHENTIC, confidence, signals, independent_count, False, graph.digest())
     return FusionDecision(VerificationResult.VERIFIED, confidence, signals, independent_count, False, graph.digest())
