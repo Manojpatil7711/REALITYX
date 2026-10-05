@@ -113,3 +113,23 @@ def test_verify_image_rejects_concurrent_duplicate_request(monkeypatch):
     assert second.status_code == 409
     assert second.headers["Retry-After"] == "2"
     assert first.status_code == 200
+
+def test_verify_media_accepts_pdf_container_conservatively():
+    response = client.post(
+        "/v1/verify/media",
+        headers={"Idempotency-Key": str(uuid.uuid4())},
+        files={"file": ("test.pdf", b"%PDF-1.7\\n%test", "application/pdf")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["result"] == "uncertain"
+    assert body["signals"][0]["details"]["format"] == "pdf"
+
+
+def test_verify_media_rejects_fake_container():
+    response = client.post(
+        "/v1/verify/media",
+        headers={"Idempotency-Key": str(uuid.uuid4())},
+        files={"file": ("fake.mp4", b"not-a-real-container", "video/mp4")},
+    )
+    assert response.status_code == 415
