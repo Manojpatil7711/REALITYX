@@ -14,6 +14,8 @@ class IdentitySignals:
     date_of_birth: str | None = None
     document_number: str | None = None
     address: str | None = None
+    # Provider-supplied opaque token; REALITYX never interprets or displays its value.
+    opaque_identity_key: str | None = None
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,12 @@ def match_identity(left: IdentitySignals, right: IdentitySignals) -> IdentityMat
     strong = 0
     weak = 0
     reasons: list[str] = []
+    opaque_left = _norm(left.opaque_identity_key)
+    opaque_right = _norm(right.opaque_identity_key)
+    if opaque_left and opaque_right and opaque_left == opaque_right:
+        strong += 1
+        reasons.append("opaque_identity_match")
+
     for label, a, b in (
         ("name", left.name, right.name),
         ("date_of_birth", left.date_of_birth, right.date_of_birth),
