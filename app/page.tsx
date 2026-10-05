@@ -219,7 +219,7 @@ export default function Home(){
         {files.length>0&&<div className="intakeSummary" aria-live="polite">
           {imageCount>0&&<span>IMAGE {imageCount}</span>}{pdfCount>0&&<span>PDF {pdfCount}</span>}{videoCount>0&&<span>VIDEO {videoCount}</span>}{audioCount>0&&<span>AUDIO {audioCount}</span>}{zipCount>0&&<span>ZIP {zipCount}</span>}
         </div>}
-        <button className="primary" onClick={()=>{const file=imageFile();if(file) void verifyFile(file);else setError("Choose evidence to verify.");}} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
+        <button className="primary" onClick={()=>{const file=files[0];if(file) void verifyFile(file);else setError("Choose evidence to verify.");}} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
         {error&&<div className="verifyError" role="alert">{error}</div>}
         {result&&(()=>{
           const verdict=(result.result??"UNCERTAIN").toUpperCase();
