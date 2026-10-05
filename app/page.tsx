@@ -65,6 +65,7 @@ export default function Home(){
   const [stage,setStage]=useState("");
   const [result,setResult]=useState<Result|null>(null);
   const [error,setError]=useState("");
+  const resultRef=useRef<HTMLDivElement>(null);
   const t=copy[lang]||copy.en;
 
   function addFiles(list:FileList|null){
@@ -84,6 +85,34 @@ export default function Home(){
 
   function imageFile(){
     return files.find(file=>["image/jpeg","image/png","image/webp"].includes(file.type));
+  }
+
+  function downloadReceipt(){
+    if(!result) return;
+    const receipt={
+      issuer:"REALITYX",
+      protocol_version:"1.0",
+      verification_id:result.verification_id,
+      artifact_sha256:result.sha256,
+      result:result.result,
+      confidence:result.confidence,
+      evidence_graph_digest:result.evidence_graph_digest,
+      receipt_digest:result.receipt_digest,
+      cryptographic_valid:result.cryptographic_valid,
+      exported_at:new Date().toISOString(),
+    };
+    const blob=new Blob([JSON.stringify(receipt,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const anchor=document.createElement("a");
+    anchor.href=url;
+    anchor.download=`realityx-${result.verification_id||"verification"}-receipt.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printResult(){
+    if(!result) return;
+    window.print();
   }
 
   async function verify(){
@@ -151,7 +180,7 @@ export default function Home(){
           const verdict=(result.result??"UNCERTAIN").toUpperCase();
           const tone=verdict==="VERIFIED"||verdict==="AUTHENTIC"?"verified":verdict==="INAUTHENTIC"||verdict==="MANIPULATED"||verdict==="AI_GENERATED"?"inauthentic":"uncertain";
           const label=tone==="verified"?"Verified":tone==="inauthentic"?"Inauthentic":"Uncertain";
-          return <div className={`verifyResult trustResult ${tone}`} aria-live="polite">
+          return <div ref={resultRef} className={`verifyResult trustResult ${tone}`} aria-live="polite">
             <div className="trustResultHeader">
               <div className="trustVerdict"><span className="statusDot"/><b>{label}</b></div>
               {typeof result.confidence==="number"&&<div className="confidence"><strong>{Math.round(result.confidence*100)}%</strong><span>confidence</span></div>}
@@ -165,7 +194,7 @@ export default function Home(){
               {typeof result.independent_source_count==="number"&&<div><small>Independent sources</small><b>{result.independent_source_count}</b></div>}
               <div><small>Conflict</small><b>{result.conflict?"Detected":"None detected"}</b></div>
             </div>
-            <div className="evidenceNote"><span>✓</span><div><b>Evidence reviewed</b><small>Confidence is shown transparently. Uncertainty is never hidden.</small></div></div>
+            <div id="evidence-summary" className="evidenceNote"><span>✓</span><div><b>Evidence reviewed</b><small>Confidence is shown transparently. Uncertainty is never hidden.</small></div></div>
             <div className="receipt">
               <div className="receiptTitle"><span>REALITYX TRUST RECEIPT</span>{result.cryptographic_valid&&<b>✓ Cryptographically valid</b>}</div>
               {result.verification_id&&<div><small>Verification ID</small><code>{result.verification_id}</code></div>}
@@ -173,7 +202,7 @@ export default function Home(){
               {result.evidence_graph_digest&&<div><small>Evidence digest</small><code>{result.evidence_graph_digest}</code></div>}
               {result.receipt_digest&&<div><small>Receipt digest</small><code>{result.receipt_digest}</code></div>}
             </div>
-            <div className="resultActions"><button type="button">View evidence</button><button type="button">Download receipt</button><button type="button">Print</button></div>
+            <div className="resultActions"><button type="button" onClick={()=>resultRef.current?.querySelector("#evidence-summary")?.scrollIntoView({behavior:"smooth",block:"nearest"})}>View evidence</button><button type="button" onClick={downloadReceipt}>Download receipt</button><button type="button" onClick={printResult}>Print</button></div>
           </div>;
         })()}
         {!result&&!error&&<div className="privacy">Fast intake · evidence first · no silent certainty</div>}
@@ -181,9 +210,9 @@ export default function Home(){
     </section>
 
     <section className="mediaStrip" id="verify-types" aria-label="Verification types">
-      {media.map(([name,desc,status])=><button className="mediaCard" key={name} type="button" disabled={status!=="available"} aria-label={status==="available"?`Verify ${name}`:`${name} verification planned`} onClick={()=>{if(status==="available")inputRef.current?.click()}}>
+      {media.map(([name,desc,status])=><button className="mediaCard" key={name} type="button" disabled={status!=="available"} aria-label={status==="available"?`Verify ${name}`:`${name} verification is not connected`} onClick={()=>{if(status==="available")inputRef.current?.click()}}>
         <span className="mediaIcon">{name==="IMAGE"?"◈":name==="VIDEO"?"▶":name==="AUDIO"?"◉":name==="DOCUMENT"?"▤":"⌁"}</span>
-        <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaStatus">{status==="available"?"AVAILABLE":"PLANNED"}</span><span className="mediaArrow">→</span>
+        <span className="mediaCopy"><b>{name}</b><small>{desc}</small></span><span className="mediaStatus">{status==="available"?"AVAILABLE":"NOT CONNECTED"}</span><span className="mediaArrow">→</span>
       </button>)}
     </section>
 
