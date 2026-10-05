@@ -54,6 +54,12 @@ const principles = [
   ["03","EVIDENCE FUSION","Independent signals combined conservatively."],
   ["04","DECISION","VERIFIED · INAUTHENTIC · UNCERTAIN"],
 ];
+const principleCopy:Record<string,string[][]>={
+ en:[["01","FAST SCAN","Integrity, hash and basic signals first."],["02","DEEP ANALYSIS","Specialist engines when production-ready."],["03","EVIDENCE FUSION","Independent signals combined conservatively."],["04","DECISION","VERIFIED · INAUTHENTIC · UNCERTAIN"]],
+ hi:[["01","त्वरित स्कैन","इंटीग्रिटी, हैश और मूल संकेत पहले।"],["02","गहन विश्लेषण","प्रोडक्शन-रेडी होने पर विशेषज्ञ इंजन।"],["03","साक्ष्य संयोजन","स्वतंत्र संकेतों को सावधानी से जोड़ा जाता है।"],["04","निर्णय","सत्यापित · अप्रामाणिक · अनिश्चित"]],
+ mr:[["01","जलद स्कॅन","इंटिग्रिटी, हॅश आणि मूलभूत संकेत प्रथम."],["02","सखोल विश्लेषण","प्रोडक्शन-रेडी झाल्यावर विशेषज्ञ इंजिन."],["03","पुरावा संयोजन","स्वतंत्र संकेत सावधपणे एकत्र केले जातात."],["04","निर्णय","सत्यापित · अप्रामाणिक · अनिश्चित"]]
+};
+function pc(lang:string,i:number){return principleCopy[lang]?.[i]||principleCopy.en[i];}
 
 const trust = [
   ["Evidence first","Independent signals are preferred over a single model."],
@@ -61,6 +67,12 @@ const trust = [
   ["Cryptographic proof","Receipts bind results to the exact verified artifact."],
   ["Provider neutral","External engines can be added without changing the trust layer."],
 ];
+const trustCopy:Record<string,string[][]>={
+ en:[["Evidence first","Independent signals are preferred over a single model."],["Uncertainty allowed","Conflicts and missing evidence can remain UNCERTAIN."],["Cryptographic proof","Receipts bind results to the exact verified artifact."],["Provider neutral","External engines can be added without changing the trust layer."]],
+ hi:[["साक्ष्य पहले","एक मॉडल की तुलना में स्वतंत्र संकेतों को प्राथमिकता दी जाती है।"],["अनिश्चितता स्वीकार्य","टकराव और अनुपलब्ध साक्ष्य UNCHERTAIN रह सकते हैं।"],["क्रिप्टोग्राफिक प्रमाण","रसीदें परिणाम को ठीक उसी सत्यापित आर्टिफैक्ट से जोड़ती हैं।"],["प्रदाता-निरपेक्ष","ट्रस्ट लेयर बदले बिना बाहरी इंजन जोड़े जा सकते हैं।"]],
+ mr:[["पुरावा प्रथम","एका मॉडेलपेक्षा स्वतंत्र संकेतांना प्राधान्य दिले जाते."],["अनिश्चितता स्वीकार्य","विसंगती आणि अपुरा पुरावा UNCERTAIN राहू शकतो."],["क्रिप्टोग्राफिक पुरावा","रसीद परिणामाला नेमक्या सत्यापित आर्टिफॅक्टशी जोडते."],["प्रदाता-निरपेक्ष","ट्रस्ट लेयर न बदलता बाह्य इंजिन जोडता येतात."]]
+};
+function tc(lang:string,i:number){return trustCopy[lang]?.[i]||trustCopy.en[i];}
 
 const accepted = ["image/jpeg","image/png","image/webp","application/pdf","video/mp4","video/quicktime","video/webm","audio/mpeg","audio/wav","audio/x-wav","audio/mp4","audio/x-m4a","application/zip"];
 type Result = {
@@ -270,12 +282,12 @@ export default function Home(){
 
     <section className="section" id="how">
       <div className="sectionHead"><div><div className="eyebrow">{ui(lang,"howEyebrow")}</div><h2>{ui(lang,"howTitle1")}<br/>{ui(lang,"howTitle2")}</h2></div><p>{ui(lang,"howDesc")}</p></div>
-      <div className="flow">{principles.map(([n,title,desc],i)=><div className="flowItem" key={n}><span>{n}</span><b>{title}</b><p>{desc}</p>{i<principles.length-1&&<i>→</i>}</div>)}</div>
+      <div className="flow">{principles.map(([n,title,desc],i)=><div className="flowItem" key={n}><span>{n}</span><b>{pc(lang,i)[1]}</b><p>{pc(lang,i)[2]}</p>{i<principles.length-1&&<i>→</i>}</div>)}</div>
     </section>
 
     <section className="section" id="trust">
       <div className="sectionHead"><div><div className="eyebrow">{ui(lang,"trustEyebrow")}</div><h2>{ui(lang,"trustTitle")}</h2></div><p>{ui(lang,"trustDesc")}</p></div>
-      <div className="trustGrid">{trust.map(([title,desc])=><div className="trustCard" key={title}><span>◆</span><b>{title}</b><p>{desc}</p></div>)}</div>
+      <div className="trustGrid">{trust.map(([title,desc],i)=><div className="trustCard" key={title}><span>◆</span><b>{tc(lang,i)[0]}</b><p>{tc(lang,i)[1]}</p></div>)}</div>
     </section>
 
     <section className="section compact">
