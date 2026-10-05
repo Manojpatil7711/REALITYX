@@ -81,3 +81,11 @@ footer{max-width:1240px;margin:auto;padding:28px 24px 40px;border-top:1px solid 
 .receipt{margin-top:12px;padding:13px;border:1px solid #26343a;border-radius:10px;background:#070c0f}.receiptTitle{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.receiptTitle span{font-size:9px;letter-spacing:.14em;color:#9aa8ad;font-weight:800}.receiptTitle b{font-size:9px;color:#73e99a}.receipt>div:not(.receiptTitle){margin-top:7px}.receipt small{display:block;color:#65737a;font-size:8px;margin-bottom:3px}.receipt code{display:block;color:#b4c1bd;font-size:8px;word-break:break-all}
 .resultActions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.resultActions button{border:1px solid #2a373d;background:#0b1114;color:#d9e2de;border-radius:8px;padding:9px;font-size:10px;font-weight:750;cursor:pointer}.resultActions button:hover{border-color:#4b7559;color:#effff3}
 @media(max-width:600px){.trustResultHeader{align-items:flex-start}.resultGrid{grid-template-columns:1fr 1fr}.resultActions{grid-template-columns:1fr}.receiptTitle{align-items:flex-start;flex-direction:column}}
+
+
+.evidenceList{margin-top:10px;border-top:1px solid #1b2a21;padding-top:9px;display:grid;gap:7px}
+.evidenceItem{display:flex;justify-content:space-between;gap:12px;padding:9px;border:1px solid #1c292f;border-radius:9px;background:#080d10}
+.evidenceItem b{display:block;font-size:10px;color:#dce7e1}
+.evidenceItem small{display:block;margin-top:3px;color:#74838a;font-size:9px;line-height:1.45}
+.evidenceItem>span{flex:none;color:#8fb49c;font-size:9px;text-transform:uppercase;align-self:flex-start}
+@media print{.nav,.heroTrust,.intakeActions,.primary,.resultActions,.mediaStrip,.section,.plans,.languageBand,footer{display:none!important}.hero{padding:20px}.verifyCard{box-shadow:none;border:0;max-width:900px}.trustResult{break-inside:avoid}}
