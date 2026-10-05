@@ -150,6 +150,15 @@ export default function Home(){
     finally{setChecking(false);setStage("")}
   }
 
+  async function verify(){
+    const file=imageFile();
+    if(!file){
+      setError("This evidence type is not connected to the live verification engine yet.");
+      return;
+    }
+    await verifyFile(file);
+  }
+
   const imageCount=files.filter(f=>["image/jpeg","image/png","image/webp"].includes(f.type)).length;
   const pdfCount=files.filter(f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name)).length;
   const videoCount=files.filter(f=>f.type.startsWith("video/")).length;
