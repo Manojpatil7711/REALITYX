@@ -150,15 +150,6 @@ export default function Home(){
     finally{setChecking(false);setStage("")}
   }
 
-  async function verify(){
-    const file=imageFile();
-    if(!file){
-      setError("This evidence type is not connected to the live verification engine yet.");
-      return;
-    }
-    await verifyFile(file);
-  }
-
   const imageCount=files.filter(f=>["image/jpeg","image/png","image/webp"].includes(f.type)).length;
   const pdfCount=files.filter(f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name)).length;
   const videoCount=files.filter(f=>f.type.startsWith("video/")).length;
@@ -198,7 +189,7 @@ export default function Home(){
         {files.length>0&&<div className="intakeSummary" aria-live="polite">
           {imageCount>0&&<span>IMAGE {imageCount}</span>}{pdfCount>0&&<span>PDF {pdfCount}</span>}{videoCount>0&&<span>VIDEO {videoCount}</span>}{audioCount>0&&<span>AUDIO {audioCount}</span>}{zipCount>0&&<span>ZIP {zipCount}</span>}
         </div>}
-        <button className="primary" onClick={verify} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
+        <button className="primary" onClick={()=>{const file=imageFile();if(file) void verifyFile(file);else setError("This evidence type is not connected to the live verification engine yet.");}} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
         {error&&<div className="verifyError" role="alert">{error}</div>}
         {result&&(()=>{
           const verdict=(result.result??"UNCERTAIN").toUpperCase();
