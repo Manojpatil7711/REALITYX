@@ -14,6 +14,7 @@ class FusionDecision:
     evidence: list[Evidence]
     independent_source_count: int = 0
     conflict: bool = False
+    evidence_graph_digest: str = ""
 
 
 def _verdict_signals(signals: list[Evidence]) -> list[Evidence]:
@@ -46,12 +47,13 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
             0.0,
             signals,
             conflict=c2pa_conflict,
+            evidence_graph_digest=EvidenceGraph.from_evidence(signals).digest() if signals else "",
         )
 
     # Provenance is security-critical input. A malformed graph must never turn
     # an untrusted upload into a 500 or an implicit positive/negative verdict.
     try:
-        graph = EvidenceGraph.from_evidence(verdict_signals)
+        graph = EvidenceGraph.from_evidence(signals)
         groups = graph.independent_source_groups(verdict_signals)
     except ValueError:
         return FusionDecision(
@@ -60,6 +62,7 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
             signals,
             independent_source_count=0,
             conflict=False,
+            evidence_graph_digest=graph.digest(),
         )
 
     independent_count = len(groups)
@@ -86,9 +89,10 @@ def fuse_evidence(signals: list[Evidence]) -> FusionDecision:
             signals,
             independent_count,
             True,
+            graph.digest(),
         )
     if confidence < 0.70:
-        return FusionDecision(VerificationResult.UNCERTAIN, confidence, signals, independent_count, False)
+        return FusionDecision(VerificationResult.UNCERTAIN, confidence, signals, independent_count, False, graph.digest())
     if negative:
         return FusionDecision(VerificationResult.INAUTHENTIC, confidence, signals, independent_count, False)
-    return FusionDecision(VerificationResult.VERIFIED, confidence, signals, independent_count, False)
+    return FusionDecision(VerificationResult.VERIFIED, confidence, signals, independent_count, False, graph.digest())
