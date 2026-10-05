@@ -206,6 +206,8 @@ async def verify_media(
 
     try:
         verification_id = str(uuid.uuid4())
+        # Fast path: structural inspection only; heavyweight forensic work stays out
+        # of the synchronous upload request for predictable latency.
         evidence = Evidence(
             evidence_id="container-integrity",
             source_group="container-integrity",
@@ -213,7 +215,12 @@ async def verify_media(
             status=SignalStatus.AVAILABLE,
             kind=EvidenceKind.FACT,
             summary="File container signature is structurally recognized; authenticity is not established.",
-            details={"format": kind, "authenticity_engine": "not_connected"},
+            details={
+                "format": kind,
+                "size_bytes": len(data),
+                "authenticity_engine": "not_connected",
+                "analysis_mode": "fast_structural",
+            },
             confidence=0.25,
         )
         response = VerificationResponse(
