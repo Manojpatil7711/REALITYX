@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, File, Header, HTTPException, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
 from .attestation import build_artifact
-from .contracts import VerificationResponse
+from .contracts import Evidence, EvidenceKind, SignalStatus, VerificationResponse
 from .idempotency import store
 from .pipeline import run_signal_pipeline
 from .evidence_fusion import fuse_evidence
