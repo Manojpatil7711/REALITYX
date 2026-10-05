@@ -113,3 +113,108 @@ async def verify_image(
     except Exception:
         store.release(idempotency_key, fingerprint)
         raise
+
+
+@router.post("/verify/media", response_model=VerificationResponse)
+async def verify_media(
+    request: Request,
+    file: UploadFile = File(...),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> VerificationResponse:
+    """Perform safe container-level verification for non-image uploads.
+
+    This deliberately reports UNCERTAIN for authenticity until a media-specific
+    forensic engine is available; it never upgrades structural validity into
+    proof of origin or authenticity.
+    """
+    if not idempotency_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key is required")
+    try:
+        uuid.UUID(idempotency_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Idempotency-Key must be a UUID") from exc
+
+    identity = request.client.host if request.client else "unknown"
+    decision = image_verify_limiter.check(identity)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many verification requests; please try again later.",
+            headers={"Retry-After": str(decision.retry_after_seconds)},
+        )
+
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if not data:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Upload exceeds maximum size")
+
+    kind = _media_format(data)
+    if kind not in MEDIA_FORMATS:
+        raise HTTPException(status_code=415, detail="Unsupported or invalid media container")
+
+    fingerprint = hashlib.sha256(data).hexdigest()
+    declared_mime = (file.content_type or "").lower()
+    expected = {
+        "pdf": "application/pdf",
+        "zip": "application/zip",
+        "mp4": "video/mp4",
+        "mov": "video/quicktime",
+        "webm": "video/webm",
+        "mp3": "audio/mpeg",
+        "wav": "audio/wav",
+        "flac": "audio/flac",
+        "ogg": "audio/ogg",
+    }[kind]
+    if declared_mime and declared_mime != expected:
+        raise HTTPException(status_code=415, detail="Declared content type does not match media container")
+
+    cached, claimed = store.claim(idempotency_key, fingerprint)
+    if cached is not None:
+        return VerificationResponse.model_validate(cached)
+    if not claimed:
+        raise HTTPException(
+            status_code=409,
+            detail="Verification with this Idempotency-Key is already in progress; please retry.",
+            headers={"Retry-After": "2"},
+        )
+
+    try:
+        verification_id = str(uuid.uuid4())
+        evidence = Evidence(
+            evidence_id="container-integrity",
+            source_group="container-integrity",
+            signal="container-integrity",
+            status=SignalStatus.AVAILABLE,
+            kind=EvidenceKind.FACT,
+            summary="File container signature is structurally recognized; authenticity is not established.",
+            details={"format": kind, "authenticity_engine": "not_connected"},
+            confidence=0.25,
+        )
+        response = VerificationResponse(
+            verification_id=verification_id,
+            sha256=fingerprint,
+            result="uncertain",
+            confidence=0.25,
+            signals=[evidence],
+            evidence=[evidence],
+            risk_domain="digital_media",
+            risk_level="uncertain",
+            risk_action="reverify",
+            risk_confidence=0.25,
+            risk_reasons=["Media-specific forensic verification is not connected yet."],
+            authority_status="not_required",
+            independent_source_count=0,
+            conflict=False,
+        )
+        decision = fuse_evidence([evidence])
+        response = response.model_copy(update={
+            "evidence_graph_digest": decision.evidence_graph_digest,
+        })
+        receipt_store.put(sign_artifact(build_artifact(response)))
+        professional_store.put(response)
+        store.put(idempotency_key, fingerprint, response.model_dump())
+        return response
+    except Exception:
+        store.release(idempotency_key, fingerprint)
+        raise
