@@ -96,11 +96,10 @@ def load_env_key() -> None:
         raise RuntimeError("Invalid REALITYX Ed25519 public key") from exc
 
     # Trust documents are externally consumed, so the key creation timestamp
-    # must not change on every process restart. Require an explicit deployment
-    # value for durable trust/audit semantics.
-    created_at = os.getenv("REALITYX_SIGNING_KEY_CREATED_AT")
-    if not created_at:
-        raise RuntimeError("REALITYX_SIGNING_KEY_CREATED_AT is required for a stable trust document")
+    # must not change on every process restart. Keep an explicit deployment
+    # timestamp when available; otherwise use a stable sentinel rather than
+    # injecting a new timestamp on every process restart.
+    created_at = os.getenv("REALITYX_SIGNING_KEY_CREATED_AT") or "unspecified"
 
     registry.register(PublicKeyRecord(
         key_id=key_id,
