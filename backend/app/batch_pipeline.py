@@ -61,6 +61,7 @@ class CustomerReport:
     customer_id: str
     aadhaar: PipelineDocumentResult | None = None
     pan: PipelineDocumentResult | None = None
+    duplicate_documents: tuple[PipelineDocumentResult, ...] = ()
     documents: tuple[PipelineDocumentResult, ...] = ()
 
 
@@ -177,11 +178,21 @@ def build_batch_pipeline_report(
             (item for item in group_results if item.document.kind is DocumentKind.PAN),
             None,
         )
+        primary_ids = {
+            item.document.document_id
+            for item in (aadhaar, pan)
+            if item is not None
+        }
+        duplicates = tuple(
+            item for item in group_results
+            if item.document.document_id not in primary_ids
+        )
         customers.append(
             CustomerReport(
                 customer_id=group.group_id,
                 aadhaar=aadhaar,
                 pan=pan,
+                duplicate_documents=duplicates,
                 documents=group_results,
             )
         )
