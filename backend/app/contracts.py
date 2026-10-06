@@ -98,6 +98,8 @@ class VerificationResponse(BaseModel):
     independent_source_count: int = 0
     conflict: bool = False
     evidence_graph_digest: str = Field(default="", pattern=r"^(|[0-9a-f]{64})$")
+    receipt_digest: str = Field(default="", pattern=r"^(|[0-9a-f]{64})$")
+    cryptographic_valid: bool = False
 
 class ProfessionalEvidenceItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
