@@ -219,6 +219,11 @@ export default function Home(){
         {files.length>0&&<div className="intakeSummary" aria-live="polite">
           {imageCount>0&&<span>IMAGE {imageCount}</span>}{pdfCount>0&&<span>PDF {pdfCount}</span>}{videoCount>0&&<span>VIDEO {videoCount}</span>}{audioCount>0&&<span>AUDIO {audioCount}</span>}{zipCount>0&&<span>ZIP {zipCount}</span>}
         </div>}
+        <div className="startPromise" aria-label="What you receive">
+          <span><b>VERDICT</b><small>Authentic · Inauthentic · Uncertain</small></span>
+          <span><b>EVIDENCE</b><small>Signals, provenance & limitations</small></span>
+          <span><b>TRUST RECEIPT</b><small>SHA-256 & verification identity</small></span>
+        </div>
         <button className="primary" onClick={()=>{const file=files[0];if(file) void verifyFile(file);else setError("Choose evidence to verify.");}} disabled={checking}>{checking?"Analyzing…":t.verify}<span>→</span></button>
         {error&&<div className="verifyError" role="alert">{error}</div>}
         {result&&(()=>{
