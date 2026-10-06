@@ -200,3 +200,8 @@ def test_evidence_passport_does_not_trust_revoked_key(monkeypatch):
     assert body["attestation"]["cryptographic_valid"] is False
     assert body["attestation"]["key_status"] == "revoked"
     assert any("cryptographic attestation" in item for item in body["limitations"])
+
+
+def test_verification_api_responses_are_not_cacheable():
+    response = client.get(f"/v1/receipts/{uuid.uuid4()}")
+    assert response.headers["cache-control"] == "no-store"
