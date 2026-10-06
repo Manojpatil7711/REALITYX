@@ -140,3 +140,63 @@ def test_receipt_signature_rejects_unknown_key(monkeypatch):
     assert response.status_code == 200
     assert response.json()["valid"] is False
     assert response.json()["reason"] == "Signing key is unavailable"
+
+
+def test_evidence_passport_reports_current_attestation(monkeypatch):
+    private = Ed25519PrivateKey.generate()
+    public_b64 = base64.b64encode(private.public_key().public_bytes_raw()).decode()
+    monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "passport-key")
+    monkeypatch.setenv(
+        "REALITYX_SIGNING_PRIVATE_KEY_B64",
+        base64.b64encode(private.private_bytes_raw()).decode(),
+    )
+    registry.register(PublicKeyRecord("passport-key", "Ed25519", public_b64, "active", "test"))
+
+    verification_id = client.post(
+        "/v1/verify/image",
+        headers={"Idempotency-Key": str(uuid.uuid4())},
+        files={"file": ("test.png", _png(), "image/png")},
+    ).json()["verification_id"]
+
+    response = client.get(f"/v1/receipts/passport/{verification_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["passport_version"] == "1.0"
+    assert body["verification_id"] == verification_id
+    assert body["attestation"]["signed"] is True
+    assert body["attestation"]["cryptographic_valid"] is True
+    assert body["attestation"]["algorithm"] == "Ed25519"
+    assert body["attestation"]["key_id"] == "passport-key"
+    assert body["attestation"]["key_status"] == "active"
+    assert len(body["receipt_digest"]) == 64
+
+
+def test_evidence_passport_does_not_trust_revoked_key(monkeypatch):
+    private = Ed25519PrivateKey.generate()
+    public_b64 = base64.b64encode(private.public_key().public_bytes_raw()).decode()
+    monkeypatch.setenv("REALITYX_SIGNING_KEY_ID", "revoked-passport-key")
+    monkeypatch.setenv(
+        "REALITYX_SIGNING_PRIVATE_KEY_B64",
+        base64.b64encode(private.private_bytes_raw()).decode(),
+    )
+    registry.register(PublicKeyRecord("revoked-passport-key", "Ed25519", public_b64, "active", "test"))
+
+    verification_id = client.post(
+        "/v1/verify/image",
+        headers={"Idempotency-Key": str(uuid.uuid4())},
+        files={"file": ("test.png", _png(), "image/png")},
+    ).json()["verification_id"]
+
+    registry._keys["revoked-passport-key"] = PublicKeyRecord(
+        "revoked-passport-key", "Ed25519", public_b64, "revoked", "test", revoked_at="now"
+    )
+
+    response = client.get(f"/v1/receipts/passport/{verification_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["attestation"]["signed"] is True
+    assert body["attestation"]["cryptographic_valid"] is False
+    assert body["attestation"]["key_status"] == "revoked"
+    assert any("cryptographic attestation" in item for item in body["limitations"])
