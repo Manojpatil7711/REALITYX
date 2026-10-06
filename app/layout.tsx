@@ -3,8 +3,7 @@ import "./globals.css";
 
 function siteUrl() {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  const value = configured || production || "localhost:3000";
+  const value = configured || "https://realityx-manox.vercel.app";
   return value.startsWith("http") ? value : `https://${value}`;
 }
 
