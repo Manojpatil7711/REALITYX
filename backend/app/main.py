@@ -24,6 +24,8 @@ async def security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+    if request.url.path.startswith("/v1/"):
+        response.headers["Cache-Control"] = "no-store"
     return response
 
 app.include_router(router, prefix="/v1")
