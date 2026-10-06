@@ -93,3 +93,60 @@ def verify_receipt(verification_id: str, request: Request) -> dict:
         "key_id": key_id,
         "receipt_digest": artifact_digest(artifact),
     }
+
+@router.get("/passport/{verification_id}")
+def get_passport(verification_id: str, request: Request) -> dict:
+    """Return the public Evidence Passport without exposing uploaded media."""
+    _enforce_rate_limit(request, receipt_read_limiter)
+    _parse_verification_id(verification_id)
+
+    artifact = store.get(verification_id)
+    if artifact is None:
+        raise HTTPException(status_code=404, detail="Verification passport not found")
+
+    signed = bool(artifact.signature and artifact.signature_algorithm)
+    cryptographic_valid = signed and verify_artifact_signature(artifact)
+
+    key_id = None
+    key_status = "not_configured"
+    algorithm = None
+    if artifact.signature_algorithm and ":" in artifact.signature_algorithm:
+        algorithm, key_id = artifact.signature_algorithm.split(":", 1)
+        record = registry.get(key_id)
+        if record and record.algorithm == algorithm:
+            key_status = record.status
+        else:
+            key_status = "unavailable"
+
+    return {
+        "passport_version": "1.0",
+        "issuer": artifact.issuer,
+        "verification_id": verification_id,
+        "media_sha256": artifact.media_sha256,
+        "result": artifact.result.value,
+        "confidence": artifact.confidence,
+        "evidence_hash": artifact.evidence_hash,
+        "evidence_graph_digest": artifact.evidence_graph_digest,
+        "engine_version": artifact.engine_version,
+        "protocol_version": artifact.protocol_version,
+        "policy_version": artifact.policy_version,
+        "risk_domain": artifact.risk_domain,
+        "risk_level": artifact.risk_level,
+        "authority_status": artifact.authority_status,
+        "independent_source_count": artifact.independent_source_count,
+        "conflict": artifact.conflict,
+        "receipt_digest": artifact_digest(artifact),
+        "attestation": {
+            "signed": signed,
+            "cryptographic_valid": cryptographic_valid,
+            "algorithm": algorithm,
+            "key_id": key_id,
+            "key_status": key_status,
+        },
+        "limitations": [
+            "The passport proves the integrity of this verification record, not the real-world truth of the underlying media.",
+            "An unsigned passport is integrity-addressable but is not a cryptographic attestation.",
+        ] if not cryptographic_valid else [
+            "The passport proves the integrity of this verification record, not the real-world truth of the underlying media.",
+        ],
+    }
