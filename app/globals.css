@@ -89,3 +89,8 @@ footer{max-width:1240px;margin:auto;padding:28px 24px 40px;border-top:1px solid 
 .evidenceItem small{display:block;margin-top:3px;color:#74838a;font-size:9px;line-height:1.45}
 .evidenceItem>span{flex:none;color:#8fb49c;font-size:9px;text-transform:uppercase;align-self:flex-start}
 @media print{.nav,.heroTrust,.intakeActions,.primary,.resultActions,.mediaStrip,.section,.plans,.languageBand,footer{display:none!important}.hero{padding:20px}.verifyCard{box-shadow:none;border:0;max-width:900px}.trustResult{break-inside:avoid}}
+
+.startPromise{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 2px}
+.startPromise span{border:1px solid #1b2921;border-radius:9px;background:#09100d;padding:9px 8px;min-width:0}
+.startPromise b,.startPromise small{display:block}.startPromise b{font-size:8px;letter-spacing:.11em;color:#8fe3a9}.startPromise small{margin-top:4px;font-size:8px;line-height:1.35;color:#718078}
+@media(max-width:600px){.startPromise{grid-template-columns:1fr}.startPromise span{display:flex;justify-content:space-between;align-items:center;gap:10px}.startPromise small{margin-top:0;text-align:right}}
