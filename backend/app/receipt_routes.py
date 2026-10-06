@@ -105,18 +105,29 @@ def get_passport(verification_id: str, request: Request) -> dict:
         raise HTTPException(status_code=404, detail="Verification passport not found")
 
     signed = bool(artifact.signature and artifact.signature_algorithm)
-    cryptographic_valid = signed and verify_artifact_signature(artifact)
 
     key_id = None
     key_status = "not_configured"
     algorithm = None
+    active_key = False
     if artifact.signature_algorithm and ":" in artifact.signature_algorithm:
         algorithm, key_id = artifact.signature_algorithm.split(":", 1)
         record = registry.get(key_id)
         if record and record.algorithm == algorithm:
             key_status = record.status
+            active_key = record.status == "active"
         else:
             key_status = "unavailable"
+
+    # A mathematically valid signature is not enough for current trust.
+    # A retired/revoked/unavailable key must not produce a "cryptographically
+    # valid" passport, even if the signature bytes still verify.
+    cryptographic_valid = (
+        signed
+        and active_key
+        and algorithm == "Ed25519"
+        and verify_artifact_signature(artifact)
+    )
 
     return {
         "passport_version": "1.0",
