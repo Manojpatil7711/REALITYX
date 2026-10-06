@@ -2,7 +2,7 @@ import hashlib
 import uuid
 from fastapi import APIRouter, File, Header, HTTPException, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
-from .attestation import build_artifact
+from .attestation import artifact_digest, build_artifact
 from .contracts import Evidence, EvidenceKind, SignalStatus, VerificationResponse
 from .idempotency import store
 from .pipeline import run_signal_pipeline
@@ -131,7 +131,9 @@ async def verify_image(
             conflict=unified.conflict,
             evidence_graph_digest=unified.evidence_graph_digest,
         )
-        receipt_store.put(sign_artifact(build_artifact(response)))
+        signed_artifact = sign_artifact(build_artifact(response))
+        receipt_store.put(signed_artifact)
+        response = response.model_copy(update={"receipt_digest": artifact_digest(signed_artifact), "cryptographic_valid": signed_artifact.signature is not None})
         professional_store.put(response)
         store.put(idempotency_key, fingerprint, response.model_dump())
         return response
@@ -243,7 +245,9 @@ async def verify_media(
         response = response.model_copy(update={
             "evidence_graph_digest": decision.evidence_graph_digest,
         })
-        receipt_store.put(sign_artifact(build_artifact(response)))
+        signed_artifact = sign_artifact(build_artifact(response))
+        receipt_store.put(signed_artifact)
+        response = response.model_copy(update={"receipt_digest": artifact_digest(signed_artifact), "cryptographic_valid": signed_artifact.signature is not None})
         professional_store.put(response)
         store.put(idempotency_key, fingerprint, response.model_dump())
         return response
